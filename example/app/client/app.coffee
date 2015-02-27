@@ -4,8 +4,6 @@ class Car extends soop.Base
   _schema :
     tag:
       type: Number
-  constructor: (dct) ->
-    super(dct)
 
 class Person extends soop.Base
   @collection: person
@@ -17,8 +15,6 @@ class Person extends soop.Base
       type: String
     cars:
       type: [Car]
-  constructor: (dct) ->
-    super(dct)
   soop.properties @,
     fullName:
       get : ->
@@ -35,7 +31,7 @@ a2 = new Car(tag:7)
 p1.cars = [a1, a2]
 p1.save()
 
-Template.hello.helpers
+Template.home.helpers
   items: ->
     Person.find()
   format0: (obj)->

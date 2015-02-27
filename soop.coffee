@@ -1,7 +1,8 @@
 class Base
   constructor: (args)->
     if args._id
-      args = @collection.findOne(args._id)# or args
+      @_id = args._id
+      args = @collection.findOne(args._id)
     else
       @_id = null
 

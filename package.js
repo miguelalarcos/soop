@@ -2,7 +2,7 @@ Package.describe({
   name: 'miguelalarcos:soop',
   version: '0.0.1',
   summary: 'Simple Object Oriented Programming for Meteor',
-  git: '',
+  git: 'https://github.com/miguelalarcos/soop.git',
   documentation: 'README.md'
 });
 
