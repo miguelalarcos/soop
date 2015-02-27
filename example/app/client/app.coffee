@@ -23,18 +23,19 @@ class Person extends soop.Base
         @['lastName'] = lastName
 
 
-p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
-a1 = new Car(tag:5)
-a2 = new Car(tag:7)
-p1.cars = [a1, a2]
-p1.save()
-
 Template.home.helpers
   items: ->
     Person.find()
   formatCars: (objs)->
-    if not objs then return
     ret = ''
-    for obj in objs
+    for obj in (objs or [])
       ret += obj.tag + ':'
     ret
+
+Template.home.events
+  'click .new-person': (e,t)->
+    p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
+    a1 = new Car(tag:5001)
+    a2 = new Car(tag:7982)
+    p1.cars = [a1, a2]
+    p1.save()

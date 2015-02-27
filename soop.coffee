@@ -2,7 +2,7 @@ visitSchemaArray = (array, schema, func)->
   ret = []
   for value in array
     if schema
-      ret.push func(value, schema.type[0])
+      ret.push func(value, schema)
     else
       ret.push func(value)
   ret
@@ -18,7 +18,7 @@ visitSchemaObject = (obj, schema, func) ->
     else if _.isObject(value) and not _.isFunction(value)
       ret[key] = visitSchemaObject(value, schema[key], func)
     else
-      ret[key] = func(value, schema[key]?.type)
+      ret[key] = func(value, schema[key])
   return ret
 
 class Base
@@ -34,7 +34,8 @@ class Base
       @_id = null
 
     schema = @constructor.schema
-    values = visitSchemaObject args, schema, (x,klass)->
+    values = visitSchemaObject args, schema, (x, node)->
+      klass = node.type[0] or node.type
       if klass and klass.prototype instanceof Base
         new klass({_id: x})
       else
@@ -57,20 +58,28 @@ class Base
     #ss = new SimpleSchema s
     #ctx = ss.newContext()
 
-    valid = visitSchemaObject @, schema, (x, klass)->
-      if klass
-        if klass is String
-          return typeof x == 'string'
-        else if klass is Number
-          return typeof x == 'number'
-        else if x instanceof klass
-          return true
+    valid = visitSchemaObject @, schema, (x, node)->
+      if node.optional == true
+        return true
+      klass = node.type[0] or node.type
+      #if klass
+      if klass is String
+        return _.isString(x)
+      else if klass is Number
+        return _.isNumber(x)
+      else if klass is Boolean
+        return _.isBoolean(x)
+      else if klass is Date
+        return _.isDate(x)
+      else if x instanceof klass
+        return true
       return false
 
-    console.log valid
-    console.log _.flatten valid
+    if not _.all(_.flatten valid)
+      throw 'not all are valid'
 
-    doc = visitSchemaObject @, schema, (x, klass) ->
+    doc = visitSchemaObject @, schema, (x, node) ->
+      klass = node.type[0] or node.type
       if klass
         if klass.prototype instanceof Base
           x.save()
