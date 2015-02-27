@@ -1,14 +1,12 @@
 class Car extends soop.Base
   @collection: car
-  collection : car
-  _schema :
+  @schema :
     tag:
       type: Number
 
 class Person extends soop.Base
   @collection: person
-  collection : person
-  _schema :
+  @schema :
     firstName:
       type: String
     lastName:
@@ -34,5 +32,9 @@ p1.save()
 Template.home.helpers
   items: ->
     Person.find()
-  format0: (obj)->
-    obj[0].tag
+  formatCars: (objs)->
+    if not objs then return
+    ret = ''
+    for obj in objs
+      ret += obj.tag + ':'
+    ret

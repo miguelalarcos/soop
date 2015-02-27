@@ -1,2 +1,2 @@
-person.remove({   })
+person.remove({  })
 car.remove({ })
