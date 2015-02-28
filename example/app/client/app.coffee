@@ -4,12 +4,19 @@ class Car extends soop.Base
     tag:
       type: Number
 
+class Text extends soop.inLine
+  @schema:
+    text:
+      type: String
+
 class Complex extends soop.inLine
   @schema:
-    a:
+    r:
       type: Number
     i:
       type: Number
+    t:
+      type: Text
 
 class Person extends soop.Base
   @collection: person
@@ -55,5 +62,12 @@ Template.home.events
     a2 = new Car(tag:7982)
     p1.cars = [[a1, a2],[a1, a2]]
     p1.numbers = [1,2,3,4,5]
-    p1.complex = new Complex({a:50, i:70})
+    #p1.complex = new Complex({r:50, i:70, t: {text:'hola mundo'}})
+    #p1.complex = new Complex({r:50, i:70, t: new Text({text:'hola mundo'})})
+    p1.complex = new Complex
+      r:50
+      i:70
+      t:
+        new Text
+          text: 'hola mundo'
     p1.save()

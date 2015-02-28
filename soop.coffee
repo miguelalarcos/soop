@@ -1,4 +1,4 @@
-visitSchemaArray = (array, schema, func)->
+visitSchemaArray = (array, schema, func, out)->
   ret = []
   if not _.has(schema, 'type')
     schema_ = schema
@@ -6,30 +6,25 @@ visitSchemaArray = (array, schema, func)->
     schema.type = schema_[0]
   for value in array
     if _.isArray(value)
-      ret.push visitSchemaArray(value, schema.type, func)
+      ret.push visitSchemaArray(value, schema.type, func, out)
     else if _.isObject(value) and not _.isFunction(value) and not schema.type.prototype instanceof Base
-      console.log value, schema.type
-      ret.push visitSchemaObject(value, schema.type, func)
+      ret.push visitSchemaObject(value, schema.type, func, out)
     else
-      ret.push func(value, schema)
+      ret.push func(value, schema, out)
   ret
 
-visitSchemaObject = (obj, schema, func) ->
-  console.log 'visitSchemaObject', obj, schema
+visitSchemaObject = (obj, schema, func, out) ->
   if schema is undefined then schema = {}
   ret = {}
   for key, value of obj
     if key == '_id' or _.isFunction(obj[key])
       continue
     if _.isArray(value)
-      ret[key] = visitSchemaArray(value, schema[key], func)
+      ret[key] = visitSchemaArray(value, schema[key], func, out)
     else if _.isObject(value) and not _.isFunction(value)
-      console.log 'entro', key, schema[key].type.schema
-      ret[key] = visitSchemaObject(value, schema[key].type.schema, func)
-      #ret[key] = visitSchemaObject(value, schema[key], func)
+      ret[key] = visitSchemaObject(value, schema[key].type.schema, func, out)
     else
-      console.log 'else', key, schema[key], schema
-      ret[key] = func(value, schema[key])
+      ret[key] = func(value, schema[key], out)
   for key of schema
     if key not in _.keys(obj)
       ret[key] = undefined
@@ -72,26 +67,26 @@ class Base
     #ss = new SimpleSchema s
     #ctx = ss.newContext()
 
-    valid = visitSchemaObject @, schema, (x, node)->
+    recip = []
+    valid = visitSchemaObject @, schema, ( (x, node, out)->
       if x is undefined and node.optional == true
         return true
-      console.log x, node
       klass = node.type[0] or node.type
-      console.log x, 'klass', klass
       if klass is String
-        return _.isString(x)
+        if _.isString(x) then out.push true else out.push false
       else if klass is Number
-        return _.isNumber(x)
+        if _.isNumber(x) then out.push true else out.push false
       else if klass is Boolean
-        return _.isBoolean(x)
+        if _.isBoolean(x) then out.push true else out.push false
       else if klass is Date
-        return _.isDate(x)
+        if _.isDate(x) then out.push true else out.push false
       else if x instanceof klass
-        return true
-      return false
+        out.push true
+    ), recip
 
-    if not _.all(_.flatten valid)
-      throw 'not all are valid'
+    console.log valid, recip
+    #if not _.all(_.flatten valid)
+    #  throw 'not all are valid'
 
     doc = visitSchemaObject @, schema, (x, node) ->
       klass = node.type[0] or node.type
