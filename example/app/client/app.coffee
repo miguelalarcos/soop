@@ -27,7 +27,7 @@ class Person extends soop.Base
       type: String
       optional: true
     cars:
-      type: [[Car]]
+      type: [[[Car]]]
     numbers:
       type: [Number]
     complex:
@@ -49,21 +49,16 @@ Template.home.helpers
     p = Person.find()
     console.log p
     p
-  #formatCars: (objs)->
-  #  ret = ''
-  #  for obj in (objs or [])
-  #    ret += obj.tag + ':'
-  #  ret
 
 Template.home.events
   'click .new-person': (e,t)->
     p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
     a1 = new Car(tag:5001)
     a2 = new Car(tag:7982)
-    p1.cars = [[a1, a2],[a1, a2]]
+    p1.cars = [[[a1, a2],[a1, a2]]]
     p1.numbers = [1,2,3,4,5]
     #p1.complex = new Complex({r:50, i:70, t: {text:'hola mundo'}})
-    #p1.complex = new Complex({r:50, i:70, t: new Text({text:'hola mundo'})})
+
     p1.complex = new Complex
       r:50
       i:70
