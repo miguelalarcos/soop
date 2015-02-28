@@ -9,7 +9,7 @@ visitSchemaArray = (array, schema, func, flatten, path)->
     path = base + ':' + i
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type, func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value)
+    else if _.isObject(value) and not _.isFunction(value) and not schema.type.prototype instanceof Base
       ret.push visitSchemaObject(value, schema.type, func, flatten, path)
     else
       ret.push func(value, schema, flatten, path)
@@ -29,7 +29,7 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       continue
     if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value)
+    else if _.isObject(value) and not _.isFunction(value) and not schema[key].type.prototype instanceof Base
       ret[key] = visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
     else
       ret[key] = func(value, schema[key], flatten, path)
