@@ -19,7 +19,7 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
   base = path or ''
   if schema is undefined then schema = {}
   ret = {}
-  console.log obj, schema, schema[0]
+
   if schema[0]
     schema = schema[0].schema
 

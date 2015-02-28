@@ -33,7 +33,6 @@ class Person extends soop.Base
     complex:
       type: Complex
 
-
   soop.properties @,
     fullName:
       get : ->
@@ -57,7 +56,7 @@ Template.home.events
     a2 = new Car(tag:7982)
     p1.cars = [[[a1, a2],[a1, a2]]]
     p1.numbers = [1,2,3,4,5]
-    #p1.complex = new Complex({r:50, i:70, t: {text:'hola mundo'}})
+    #p1.complex = new Complex({r:50, i:70, t: {text:'hola mundo'}})  # is valid
 
     p1.complex = new Complex
       r:50
