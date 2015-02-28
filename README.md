@@ -80,22 +80,22 @@ Template.home.events
 API
 ---
 
-```soop.Base```
+* soop.Base
 
 You inherit from this class to have a class that have a save method to save to the given collection.
 
-```soop.inLine```
+* soop.inLine
 
 You inherit from this class to have a class that doesn't persist directly (it doesn't have a collection).
 
-```soop.properties```
+* soop.properties
 
 Is this code:
 
 ```coffee
 properties = (self, props) -> Object.defineProperties self.prototype, props
 ```
-Is used to create properties (setter and getter).
+It's used to create properties (setter and getter).
 
 TODO
 ----
