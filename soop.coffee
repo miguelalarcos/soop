@@ -1,30 +1,38 @@
-visitSchemaArray = (array, schema, func, out)->
+visitSchemaArray = (array, schema, func, flatten, path)->
   ret = []
   if not _.has(schema, 'type')
     schema_ = schema
     schema = {}
     schema.type = schema_[0]
-  for value in array
+  base = path
+  for value, i in array
+    path = base + ':' + i
     if _.isArray(value)
-      ret.push visitSchemaArray(value, schema.type, func, out)
-    else if _.isObject(value) and not _.isFunction(value) and not schema.type.prototype instanceof Base
-      ret.push visitSchemaObject(value, schema.type, func, out)
+      ret.push visitSchemaArray(value, schema.type, func, flatten, path)
+    else if _.isObject(value) and not _.isFunction(value)
+      ret.push visitSchemaObject(value, schema.type, func, flatten, path)
     else
-      ret.push func(value, schema, out)
+      ret.push func(value, schema, flatten, path)
   ret
 
-visitSchemaObject = (obj, schema, func, out) ->
+visitSchemaObject = (obj, schema, func, flatten, path) ->
+  base = path or ''
   if schema is undefined then schema = {}
   ret = {}
+  if schema[0]
+    schema = schema[0].schema
+
   for key, value of obj
+    path = base + ':' + key
     if key == '_id' or _.isFunction(obj[key])
       continue
     if _.isArray(value)
-      ret[key] = visitSchemaArray(value, schema[key], func, out)
+      ret[key] = visitSchemaArray(value, schema[key], func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
-      ret[key] = visitSchemaObject(value, schema[key].type.schema, func, out)
+      ret[key] = visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
     else
-      ret[key] = func(value, schema[key], out)
+      ret[key] = func(value, schema[key], flatten, path)
+
   for key of schema
     if key not in _.keys(obj)
       ret[key] = undefined
@@ -67,26 +75,25 @@ class Base
     #ss = new SimpleSchema s
     #ctx = ss.newContext()
 
-    recip = []
-    valid = visitSchemaObject @, schema, ( (x, node, out)->
+    recip = {}
+    valid = visitSchemaObject @, schema, ( (x, node, out, path)->
       if x is undefined and node.optional == true
         return true
       klass = node.type[0] or node.type
       if klass is String
-        if _.isString(x) then out.push true else out.push false
+        if _.isString(x) then out[path] = true else out[path] = false
       else if klass is Number
-        if _.isNumber(x) then out.push true else out.push false
+        if _.isNumber(x) then out[path] = true else out[path] = false
       else if klass is Boolean
-        if _.isBoolean(x) then out.push true else out.push false
+        if _.isBoolean(x) then out[path] = true else out[path] = false
       else if klass is Date
-        if _.isDate(x) then out.push true else out.push false
+        if _.isDate(x) then out[path] = true else out[path] = false
       else if x instanceof klass
-        out.push true
+        out[path] = true
     ), recip
 
-    console.log valid, recip
-    #if not _.all(_.flatten valid)
-    #  throw 'not all are valid'
+    if not _.all(_.flatten(_.values(recip)))
+      throw 'not all are valid'
 
     doc = visitSchemaObject @, schema, (x, node) ->
       klass = node.type[0] or node.type
