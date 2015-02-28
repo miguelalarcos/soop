@@ -1,13 +1,21 @@
 visitSchemaArray = (array, schema, func)->
   ret = []
+  if not _.has(schema, 'type')
+    schema_ = schema
+    schema = {}
+    schema.type = schema_[0]
   for value in array
-    if schema
-      ret.push func(value, schema)
+    if _.isArray(value)
+      ret.push visitSchemaArray(value, schema.type, func)
+    else if _.isObject(value) and not _.isFunction(value) and not schema.type.prototype instanceof Base
+      console.log value, schema.type
+      ret.push visitSchemaObject(value, schema.type, func)
     else
-      ret.push func(value)
+      ret.push func(value, schema)
   ret
 
 visitSchemaObject = (obj, schema, func) ->
+  console.log 'visitSchemaObject', obj, schema
   if schema is undefined then schema = {}
   ret = {}
   for key, value of obj
@@ -16,9 +24,15 @@ visitSchemaObject = (obj, schema, func) ->
     if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func)
     else if _.isObject(value) and not _.isFunction(value)
-      ret[key] = visitSchemaObject(value, schema[key], func)
+      console.log 'entro', key, schema[key].type.schema
+      ret[key] = visitSchemaObject(value, schema[key].type.schema, func)
+      #ret[key] = visitSchemaObject(value, schema[key], func)
     else
+      console.log 'else', key, schema[key], schema
       ret[key] = func(value, schema[key])
+  for key of schema
+    if key not in _.keys(obj)
+      ret[key] = undefined
   return ret
 
 class Base
@@ -59,10 +73,11 @@ class Base
     #ctx = ss.newContext()
 
     valid = visitSchemaObject @, schema, (x, node)->
-      if node.optional == true
+      if x is undefined and node.optional == true
         return true
+      console.log x, node
       klass = node.type[0] or node.type
-      #if klass
+      console.log x, 'klass', klass
       if klass is String
         return _.isString(x)
       else if klass is Number
@@ -94,7 +109,13 @@ class Base
 
 properties = (self, props) -> Object.defineProperties self.prototype, props
 
+class inLine
+  constructor: (args)->
+    for key, value of args
+      @[key] = value
+
 soop = {}
 soop.Base  = Base
 soop.properties = properties
+soop.inLine = inLine
 
