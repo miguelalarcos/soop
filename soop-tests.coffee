@@ -1,9 +1,25 @@
 person = new Mongo.Collection 'TestPerson'
+a = new Mongo.Collection 'TestA'
+b = new Mongo.Collection 'TestB'
+
+class B extends soop.Base
+  @collection: b
+  @schema:
+    x:
+      type: String
 
 class Text extends soop.inLine
   @schema:
     text:
       type: String
+    ref:
+      type: B
+
+class A extends soop.Base
+  @collection: a
+  @schema:
+    x:
+      type: Text
 
 class Complex extends soop.inLine
   @schema:
@@ -11,8 +27,8 @@ class Complex extends soop.inLine
       type: Number
     i:
       type: Number
-    t:
-      type: Text
+    a:
+      type: A
 
 class Person extends soop.Base
   @collection: person
@@ -42,15 +58,18 @@ describe 'suite basics', ->
 
 
   it 'test adding an attribute inline', (test) ->
-    p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
-
+    p1 = new Person {firstName: 'Miguel'}
     p1.complex = new Complex
       r:50
       i:70
-      t:
-        new Text
+      a: new A
+        x: new Text
           text: 'hola mundo'
+          ref: new B
+            x: 'game over!'
 
     p1.save()
     p2 = Person.findOne(p1._id)
+    console.log p1
+     #_.isEqual(p1,p2)
     test.equal p1, p2

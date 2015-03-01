@@ -16,6 +16,7 @@ visitSchemaArray = (array, schema, func, flatten, path)->
   ret
 
 visitSchemaObject = (obj, schema, func, flatten, path) ->
+
   base = path or ''
   if schema is undefined then schema = {}
   ret = {}
@@ -54,10 +55,13 @@ class Base
       @_id = null
 
     schema = @constructor.schema
+
     values = visitSchemaObject args, schema, (x, node)->
       klass = node.type[0] or node.type
       if klass and klass.prototype instanceof Base
         new klass({_id: x})
+      else if klass and klass.prototype instanceof inLine
+        new klass x
       else
         x
 
@@ -115,8 +119,17 @@ class Base
         if klass.prototype instanceof Base
           x.save()
           x._id
+        else if klass.prototype instanceof inLine
+          console.log 'instanceof inline'
+          for attr, value of x
+            console.log value
+            if value instanceof Base
+              console.log 'llamamos a save'
+              value.save()
+          x
         else
           x
+
 
     if @_id is null
       @_id = @constructor.collection.insert(doc)
@@ -127,8 +140,18 @@ properties = (self, props) -> Object.defineProperties self.prototype, props
 
 class inLine
   constructor: (args)->
+
+    schema = @constructor.schema
     for key, value of args
-      @[key] = value
+      #if key == 'constructor'
+      #  continue
+      if _.isFunction(value)
+        continue
+      klass = schema[key].type
+      if klass.prototype instanceof inLine
+        @[key] = new klass value
+      else
+        @[key] = value
 
 soop = {}
 soop.Base  = Base
