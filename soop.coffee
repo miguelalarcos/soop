@@ -37,6 +37,8 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
   for key of schema
     if key not in _.keys(obj)
       ret[key] = undefined
+      func(false, schema[key], flatten, base + ':' + key)
+
   return ret
 
 class Base
@@ -62,11 +64,18 @@ class Base
     for key, value of values
       @[key] = value
 
+
   @find : (selector) ->
     klass = @
     if selector is undefined or selector is null
       selector = {}
     (new klass(doc, false) for doc in @collection.find(selector).fetch())
+
+  @findOne: (selector)->
+    klass = @
+    if selector is undefined or selector is null
+      selector = {}
+    new klass(@collection.findOne(selector), false)
 
   save: ->
     doc = {}
@@ -79,7 +88,8 @@ class Base
     recip = {}
     valid = visitSchemaObject @, schema, ( (x, node, out, path)->
       if x is undefined and node.optional == true
-        return true
+        out[path] = true
+        return
       klass = node.type[0] or node.type
       if klass is String
         if _.isString(x) then out[path] = true else out[path] = false
@@ -91,7 +101,10 @@ class Base
         if _.isDate(x) then out[path] = true else out[path] = false
       else if x instanceof klass
         out[path] = true
+      else
+        out[path] = false
     ), recip
+
 
     if not _.all(_.flatten(_.values(recip)))
       throw 'not all are valid'

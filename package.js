@@ -13,9 +13,14 @@ Package.onUse(function(api) {
   api.export('soop', 'client');
 });
 
-/*Package.onTest(function(api) {
+Package.onTest(function(api) {
   api.use('tinytest');
   api.use('miguelalarcos:soop');
-  api.addFiles('miguelalarcos:soop-tests.js');
+  api.use('coffeescript');
+  api.use('mongo', ['client', 'server']);
+  api.use('practicalmeteor:munit', 'client');
+  api.use('miguelalarcos:soop');
+  api.addFiles('soop-tests.coffee', 'client');
+  api.addFiles('soop-tests-server.coffee', 'server');
 });
-*/
+

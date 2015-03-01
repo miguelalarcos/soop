@@ -47,7 +47,12 @@ Template.home.helpers
   items: ->
     p = Person.find()
     console.log p
-    p
+    p_ = p[0]
+    for c1 in p_.cars
+      for c2 in c1
+        for c3 in c2
+          console.log c3
+    return p
 
 Template.home.events
   'click .new-person': (e,t)->
