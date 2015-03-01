@@ -15,12 +15,12 @@ class Car extends soop.Base
     tag:
       type: Number
 
-class Text extends soop.inLine
+class Text extends soop.InLine
   @schema:
     text:
       type: String
 
-class Complex extends soop.inLine
+class Complex extends soop.InLine
   @schema:
     r:
       type: Number
@@ -77,6 +77,8 @@ Template.home.events
     p1.save()
 ```
 
+Check the test files for more examples.
+
 API
 ---
 
@@ -84,7 +86,7 @@ API
 
 You inherit from this class to have a class that have a save method to save to the given collection.
 
-* soop.inLine
+* soop.InLine
 
 You inherit from this class to have a class that doesn't persist directly (it doesn't have a collection).
 

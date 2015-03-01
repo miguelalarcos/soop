@@ -4,12 +4,12 @@ class Car extends soop.Base
     tag:
       type: Number
 
-class Text extends soop.inLine
+class Text extends soop.InLine
   @schema:
     text:
       type: String
 
-class Complex extends soop.inLine
+class Complex extends soop.InLine
   @schema:
     r:
       type: Number

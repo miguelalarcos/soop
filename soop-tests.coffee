@@ -8,7 +8,7 @@ class B extends soop.Base
     x:
       type: String
 
-class Text extends soop.inLine
+class Text extends soop.InLine
   @schema:
     text:
       type: String
@@ -21,7 +21,7 @@ class A extends soop.Base
     x:
       type: Text
 
-class Complex extends soop.inLine
+class Complex extends soop.InLine
   @schema:
     r:
       type: Number
