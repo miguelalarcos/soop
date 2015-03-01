@@ -75,6 +75,7 @@ describe 'suite basics', ->
       test.equal 1,1
 
   it 'test complex fail', (test) ->
+    console.log 'test complex fail-------------------------------------'
     p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
     try
       c = new Complex

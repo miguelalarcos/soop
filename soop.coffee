@@ -10,7 +10,6 @@ visitSchemaArray = (array, schema, func, flatten, path)->
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type, func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
-      console.log 'array', schema
       ret.push new schema.type[0](visitSchemaObject(value, schema, func, flatten, path))
     else
       ret.push func(value, schema, flatten, path)
@@ -39,9 +38,9 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
     else if _.isObject(value) and not _.isFunction(value)
       if value instanceof Base or value instanceof InLine
         ret[key] = value
+        visitSchemaObject(value, schema[key], func, flatten, path)
       else
         ret[key] = new schema[key].type(visitSchemaObject(value, schema[key], func, flatten, path))
-        console.log '--->', schema[key]
     else
       ret[key] = func(value, schema[key], flatten, path)
 
@@ -58,7 +57,7 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
 
 class Base
   constructor: (args, doFindOne)->
-    console.log 'constructor', args
+
     if doFindOne is undefined
       doFindOne = true
 
@@ -113,6 +112,7 @@ class Base
         out[path] = true
         return
       klass = node.type[0] or node.type
+      console.log x, klass
       if klass is String
         if _.isString(x) then out[path] = true else out[path] = false
       else if klass is Number
@@ -127,7 +127,7 @@ class Base
         out[path] = false
     ), recip
 
-
+    console.log recip
     if not _.all(_.flatten(_.values(recip)))
       throw 'not all are valid'
 
