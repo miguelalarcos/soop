@@ -10,7 +10,10 @@ Meteor.methods
 
 person.allow
   insert: -> true
+  update: -> true
 a.allow
   insert: -> true
+  update: -> true
 b.allow
   insert: -> true
+  update: -> true

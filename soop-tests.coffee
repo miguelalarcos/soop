@@ -41,6 +41,8 @@ class Person extends soop.Base
     complex:
       type: Complex
 
+
+
 describe 'suite basics', ->
   beforeEach (test)->
     Meteor.call 'delete'
@@ -48,18 +50,64 @@ describe 'suite basics', ->
   afterEach (test) ->
     Meteor.call 'delete'
 
-  it 'test simplest', (test) ->
-    p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
+  it 'test empty', (test) ->
+    p1 = new Person {}
     try
       p1.save()
       test.equal 0,1
     catch
       test.equal 1,1
 
+  it 'test optional=true', (test) ->
+    p1 = new Person {lastName: 'Alarcos'}
+    try
+      p1.save()
+      test.equal 0,1
+    catch
+      test.equal 1,1
 
-  it 'test adding an attribute inline', (test) ->
+  it 'test simplest fail', (test) ->
     p1 = new Person {firstName: 'Miguel'}
-    p1.complex = new Complex
+    try
+      p1.save()
+      test.equal 0,1
+    catch
+      test.equal 1,1
+
+  it 'test complex fail', (test) ->
+    p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
+    try
+      c = new Complex
+        r:50
+        i:70
+
+      p1.complex = c
+      p1.save()
+      test.equal 0,1
+    catch
+      test.equal 1,1
+
+  it 'test ok', (test) ->
+    p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
+    try
+      c = new Complex
+        r:50
+        i:70
+        a: new A
+          x: new Text
+            text: 'hola mundo'
+            ref: new B
+              x: 'game over!'
+      p1.complex = c
+      p1.save()
+      test.equal 1,1
+    catch
+      test.equal 0,1
+
+  it 'test mixin attributes inline and type base', (test) ->
+    console.log '********************test mixin attributes inline and type base'
+    p1 = new Person {firstName: 'Miguel'}
+    c = new Complex
       r:50
       i:70
       a: new A
@@ -67,9 +115,10 @@ describe 'suite basics', ->
           text: 'hola mundo'
           ref: new B
             x: 'game over!'
-
+    p1.complex = c
     p1.save()
+
     p2 = Person.findOne(p1._id)
-    console.log p1
-     #_.isEqual(p1,p2)
+    console.log p1, p2
+
     test.equal p1, p2

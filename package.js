@@ -18,8 +18,8 @@ Package.onTest(function(api) {
   api.use('miguelalarcos:soop');
   api.use('coffeescript');
   api.use('mongo', ['client', 'server']);
+  api.use('underscore', 'client');
   api.use('practicalmeteor:munit', 'client');
-  api.use('miguelalarcos:soop');
   api.addFiles('soop-tests.coffee', 'client');
   api.addFiles('soop-tests-server.coffee', 'server');
 });
