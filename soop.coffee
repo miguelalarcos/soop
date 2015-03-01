@@ -10,7 +10,8 @@ visitSchemaArray = (array, schema, func, flatten, path)->
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type, func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
-      ret.push visitSchemaObject(value, schema, func, flatten, path)
+      console.log 'array', schema
+      ret.push new schema.type[0](visitSchemaObject(value, schema, func, flatten, path))
     else
       ret.push func(value, schema, flatten, path)
   ret
@@ -36,7 +37,11 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
     if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
-      ret[key] = visitSchemaObject(value, schema[key], func, flatten, path)
+      if value instanceof Base or value instanceof InLine
+        ret[key] = value
+      else
+        ret[key] = new schema[key].type(visitSchemaObject(value, schema[key], func, flatten, path))
+        console.log '--->', schema[key]
     else
       ret[key] = func(value, schema[key], flatten, path)
 
@@ -46,13 +51,14 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       func(false, schema[key], flatten, base + ':' + key)
 
 
-  if type
-    ret = new type(ret)
+  #if type
+  #  ret = new type(ret)
 
   return ret
 
 class Base
   constructor: (args, doFindOne)->
+    console.log 'constructor', args
     if doFindOne is undefined
       doFindOne = true
 
