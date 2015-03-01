@@ -1,16 +1,16 @@
 visitSchemaArray = (array, schema, func, flatten, path)->
+
   ret = []
-  if not _.has(schema, 'type')
-    schema_ = schema
-    schema = {}
-    schema.type = schema_[0]
+  #if not schema.type
+  #  schema = {type: schema.type[0]}
+
   base = path
   for value, i in array
     path = base + ':' + i
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type, func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value) #and not schema.type.prototype instanceof Base
-      ret.push visitSchemaObject(value, schema.type, func, flatten, path)
+    else if _.isObject(value) and not _.isFunction(value)
+      ret.push visitSchemaObject(value, schema, func, flatten, path)
     else
       ret.push func(value, schema, flatten, path)
   ret
@@ -18,11 +18,12 @@ visitSchemaArray = (array, schema, func, flatten, path)->
 visitSchemaObject = (obj, schema, func, flatten, path) ->
   base = path or ''
   if schema is undefined then schema = {}
-  console.log 1, obj
-  console.log 2, schema
-  console.log 3, schema.type
-  type = schema.type
-  if type then schema = schema.type.schema
+  if schema.type and schema.type[0]
+    type = schema.type[0]
+    if type then schema = schema.type[0].schema
+  else
+    type = schema.type
+    if type then schema = schema.type.schema
   ret = {}
 
   if schema[0]
@@ -34,8 +35,7 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       continue
     if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value) #and not (schema[key].type.prototype instanceof Base) and not (schema[key].type.prototype instanceof InLine)
-      #ret[key] = visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
+    else if _.isObject(value) and not _.isFunction(value)
       ret[key] = visitSchemaObject(value, schema[key], func, flatten, path)
     else
       ret[key] = func(value, schema[key], flatten, path)
@@ -45,9 +45,10 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       ret[key] = undefined
       func(false, schema[key], flatten, base + ':' + key)
 
+
   if type
-    console.log '**********************+ llego?'
     ret = new type(ret)
+
   return ret
 
 class Base
@@ -65,7 +66,8 @@ class Base
     schema = @constructor.schema
 
     values = visitSchemaObject args, schema, (x, node)->
-      klass = node.type[0] or node.type
+      if node and node.type
+        klass = node.type[0] or node.type
 
       if klass and klass.prototype instanceof Base
         new klass({_id: x})

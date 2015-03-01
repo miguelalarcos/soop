@@ -13,7 +13,7 @@ class Text extends soop.InLine
     text:
       type: String
     ref:
-      type: B
+      type: [B]
 
 class A extends soop.Base
   @collection: a
@@ -96,8 +96,7 @@ describe 'suite basics', ->
         a: new A
           x: new Text
             text: 'hola mundo'
-            ref: new B
-              x: 'game over!'
+            ref: [new B x: 'game over!']
       p1.complex = c
       p1.save()
       test.equal 1,1
@@ -113,11 +112,10 @@ describe 'suite basics', ->
       a: new A
         x: new Text
           text: 'hola mundo'
-          ref: new B
-            x: 'game over!'
+          ref: [new B x: 'game over!']
+
     p1.complex = c
     p1.save()
-
     p2 = Person.findOne(p1._id)
     console.log p1, p2
 
