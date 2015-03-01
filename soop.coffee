@@ -1,8 +1,5 @@
 visitSchemaArray = (array, schema, func, flatten, path)->
-
   ret = []
-  #if not schema.type
-  #  schema = {type: schema.type[0]}
 
   base = path
   for value, i in array
@@ -10,24 +7,26 @@ visitSchemaArray = (array, schema, func, flatten, path)->
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type, func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
-      ret.push new schema.type[0](visitSchemaObject(value, schema, func, flatten, path))
+      if value instanceof Base or value instanceof InLine
+        ret.push value
+        visitSchemaObject(value, schema.type[0].schema, func, flatten, path)
+      else
+        ret.push new schema.type[0](visitSchemaObject(value, schema.type[0].schema, func, flatten, path))
     else
       ret.push func(value, schema, flatten, path)
   ret
 
 visitSchemaObject = (obj, schema, func, flatten, path) ->
   base = path or ''
-  if schema is undefined then schema = {}
-  if schema.type and schema.type[0]
-    type = schema.type[0]
-    if type then schema = schema.type[0].schema
-  else
-    type = schema.type
-    if type then schema = schema.type.schema
-  ret = {}
 
-  if schema[0]
-    schema = schema[0].schema
+  #if schema.type and schema.type[0]
+    #if schema.type[0] then schema = schema.type[0].schema
+  #  5
+  #else
+    #if schema.type then schema = schema.type.schema
+  #  6
+
+  ret = {}
 
   for key, value of obj
     path = base + ':' + key
@@ -38,9 +37,9 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
     else if _.isObject(value) and not _.isFunction(value)
       if value instanceof Base or value instanceof InLine
         ret[key] = value
-        visitSchemaObject(value, schema[key], func, flatten, path)
+        visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
       else
-        ret[key] = new schema[key].type(visitSchemaObject(value, schema[key], func, flatten, path))
+        ret[key] = new schema[key].type(visitSchemaObject(value, schema[key].type.schema, func, flatten, path))
     else
       ret[key] = func(value, schema[key], flatten, path)
 
@@ -48,10 +47,6 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
     if key not in _.keys(obj)
       ret[key] = undefined
       func(false, schema[key], flatten, base + ':' + key)
-
-
-  #if type
-  #  ret = new type(ret)
 
   return ret
 
