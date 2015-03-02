@@ -75,7 +75,7 @@ describe 'suite basics', ->
       test.equal 1,1
 
   it 'test complex fail', (test) ->
-    console.log 'test complex fail-------------------------------------'
+    console.log '--------------------------------------------'
     p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
     try
       c = new Complex
@@ -89,8 +89,8 @@ describe 'suite basics', ->
       console.log error
       test.equal 1,1
 
-  it 'test ok', (test) ->
-    console.log 'test ok ----------------------------------------------'
+  it 'test mix', (test) ->
+    console.log '--------------------------------------------'
     p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
     try
       c = new Complex
@@ -106,8 +106,8 @@ describe 'suite basics', ->
     catch
       test.equal 0,1
 
-  it 'test mixin attributes inline and type base', (test) ->
-    console.log '********************test mixin attributes inline and type base'
+  it 'test mix and findOne', (test) ->
+    console.log '************************************'
     p1 = new Person {firstName: 'Miguel'}
     c = new Complex
       r:50

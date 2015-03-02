@@ -8,11 +8,12 @@ visitSchemaArray = (array, schema, func, flatten, path)->
     path = base + ':' + i
     if _.isArray(value)
       ret.push visitSchemaArray(value, schema.type[0], func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value)
+    else if _.isObject(value) and not _.isFunction(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret.push new schema.type[0](visitSchemaObject(value, schema.type[0].schema, func, flatten, path))
     else
       if value instanceof Base or value instanceof InLine
         ret.push value
+        visitSchemaObject(value, schema.type[0].schema, func, flatten, path)
       else
         ret.push func(value, schema, flatten, path)
   ret
@@ -27,24 +28,26 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       continue
     if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func, flatten, path)
-    else if _.isObject(value) and not _.isFunction(value)
+    else if _.isObject(value) and not _.isFunction(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret[key] = new schema[key].type(visitSchemaObject(value, schema[key].type.schema, func, flatten, path))
     else
       if value instanceof Base or value instanceof InLine
         ret[key] = value
+        visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
       else
         ret[key] = func(value, schema[key], flatten, path)
 
   for key of schema
     if key not in _.keys(obj)
       ret[key] = undefined
+      console.log 'key not in', key, schema
       func(undefined, schema[key], flatten, base + ':' + key)
 
   return ret
 
 class Base
   constructor: (args, doFindOne)->
-
+    console.log 'constructor', args
     if doFindOne is undefined
       doFindOne = true
 
@@ -86,7 +89,7 @@ class Base
     new klass(@collection.findOne(selector), false)
 
   save: ->
-
+    console.log 'save'
     doc = {}
     schema = @constructor.schema
 
@@ -100,6 +103,7 @@ class Base
         out[path] = true
         return
       klass = node.type[0] or node.type
+      console.log x, klass
       if klass is String
         if _.isString(x) then out[path] = true else out[path] = false
       else if klass is Number
@@ -141,7 +145,7 @@ properties = (self, props) -> Object.defineProperties self.prototype, props
 
 class InLine
   constructor: (args)->
-
+    console.log 'constructor', args
     schema = @constructor.schema
     for key, value of args
       if _.isFunction(value)
