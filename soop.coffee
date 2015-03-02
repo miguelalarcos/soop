@@ -62,14 +62,16 @@ class Base
     schema = @constructor.schema
 
     values = visitSchemaObject args, schema, (x, node)->
-      #if node and node.type
+      # pensar en dejar solo la linea de arriba
       klass = node.type[0] or node.type
-
       if klass and klass.prototype instanceof Base
+        console.log '---------new Base', klass
         new klass({_id: x})
       else if klass and klass.prototype instanceof InLine
+        console.log '-------new Inline', klass
         new klass x
       else
+        console.log '----------else', x
         x
 
     for key, value of values
@@ -151,10 +153,10 @@ class InLine
       if _.isFunction(value)
         continue
       klass = schema[key].type
-      if klass.prototype instanceof InLine or klass.prototype instanceof Base
-        @[key] = new klass value
-      else
-        @[key] = value
+      #if klass.prototype instanceof InLine or klass.prototype instanceof Base
+      #  @[key] = new klass value
+      #else
+      @[key] = value
 
 soop = {}
 soop.Base  = Base
