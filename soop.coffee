@@ -1,11 +1,13 @@
 visitSchemaArray = (array, schema, func, flatten, path)->
   ret = []
 
+  if not schema.type
+    schema.type = schema
   base = path
   for value, i in array
     path = base + ':' + i
     if _.isArray(value)
-      ret.push visitSchemaArray(value, schema.type, func, flatten, path)
+      ret.push visitSchemaArray(value, schema.type[0], func, flatten, path)
     else if _.isObject(value) and not _.isFunction(value)
       ret.push new schema.type[0](visitSchemaObject(value, schema.type[0].schema, func, flatten, path))
     else
