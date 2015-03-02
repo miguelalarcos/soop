@@ -85,10 +85,12 @@ describe 'suite basics', ->
       p1.complex = c
       p1.save()
       test.equal 0,1
-    catch
+    catch error
+      console.log error
       test.equal 1,1
 
   it 'test ok', (test) ->
+    console.log 'test ok ----------------------------------------------'
     p1 = new Person {firstName: 'Miguel', lastName:'Alarcos'}
     try
       c = new Complex
