@@ -118,7 +118,9 @@ describe 'suite basics', ->
           ref: [[[new B x: 'game over!']]]
 
     p1.complex = c
+    console.log 'para hacer save'
     p1.save()
+    console.log 'hecho save'
     p2 = Person.findOne(p1._id)
     console.log p1, p2
 
