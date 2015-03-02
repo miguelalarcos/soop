@@ -1,4 +1,5 @@
-visitSchemaArray = (array, schema, func, flatten, path)->
+#
+_visitSchemaArray = (array, schema, func, flatten, path)->
   ret = []
 
   if not schema.type
@@ -19,7 +20,7 @@ visitSchemaArray = (array, schema, func, flatten, path)->
         ret.push func(value, schema, flatten, path)
   ret
 
-visitSchemaObject = (obj, schema, func, flatten, path) ->
+_visitSchemaObject = (obj, schema, func, flatten, path) ->
   base = path or ''
   ret = {}
 
@@ -47,6 +48,65 @@ visitSchemaObject = (obj, schema, func, flatten, path) ->
       func(undefined, schema[key], flatten, base + ':' + key)
 
   return ret
+#
+visitSchemaArray = (array, schema, func, replace, flatten, path)->
+  ret = []
+
+  if not schema.type
+    schema.type = schema
+  base = path
+  for value, i in array
+    path = base + ':' + i
+    if _.isArray(value)
+      ret.push visitSchemaArray(value, schema.type[0], func, replace, flatten, path)
+    else if _.isObject(value) and not _.isFunction(value) #and not (value instanceof Base) and not (value instanceof InLine)
+      #if value instanceof Base or value instanceof InLine
+      #  ret.push value
+      #  visitSchemaObject(value, schema.type[0].schema, func, flatten, path)
+      #else
+      z = visitSchemaObject(value, schema.type[0].schema, func, replace, flatten, path)
+      x = func(z, schema, flatten, path)
+      ret.push x
+    else
+      ret.push func(value, schema, flatten, path)
+  ret
+
+visitSchemaObject = (obj, schema, func, replace, flatten, path) ->
+  console.log 'visitSchemaObject', obj
+  base = path or ''
+  #ret = {}
+
+  for key, value of obj
+    path = base + ':' + key
+    if _.isFunction(obj[key]) or key == '_id'
+      continue
+    #if key == '_id'
+    #  ret[key] = func(value, {type: String}, flatten, path)
+    else if _.isArray(value)
+
+      obj[key] = visitSchemaArray(value, schema[key], func, replace, flatten, path)
+
+    else if _.isObject(value) and not _.isFunction(value) #and ((value instanceof Base) or (value instanceof InLine))
+      #if value instanceof Base or value instanceof InLine
+      #  ret[key] = visitSchemaObject(value, schema[key].type.schema, func, flatten, path)
+      #else
+      if replace
+        obj[key] = func(visitSchemaObject(value, schema[key].type.schema, func, flatten, path),schema[key], flatten, path)
+      else
+        func(visitSchemaObject(value, schema[key].type.schema, func, flatten, path),schema[key], flatten, path)
+      #ret[key] = func(value, schema[key], flatten, path)
+    else # pensar en fusionar este else con el else if anterior
+      if replace
+        obj[key] = func(value, schema[key], flatten, path)
+      else
+        func(value, schema[key], flatten, path)
+
+  for key of schema
+    if key not in _.keys(obj)
+      if replace then obj[key] = undefined
+      func(undefined, schema[key], flatten, base + ':' + key)
+
+  return obj
 
 class Base
   constructor: (args, doFindOne)->
@@ -63,14 +123,14 @@ class Base
 
     schema = @constructor.schema
 
-    values = visitSchemaObject args, schema, (x, node)->
-      #klass = node.type[0] or node.type
-      #if klass and klass.prototype instanceof Base
-      #  new klass({_id: x})
-      #else if klass and klass.prototype instanceof InLine
-      #  new klass x
-      #else
-      x
+    values = visitSchemaObject args, schema, ((x, node)->
+      klass = node.type[0] or node.type
+      if klass and klass.prototype instanceof Base and not (x instanceof  Base)
+        new klass x
+      else if klass and klass.prototype instanceof InLine and not (x instanceof InLine)
+        new klass x
+      else
+        x), true
 
     for key, value of values
       @[key] = value
@@ -100,7 +160,8 @@ class Base
     valid = visitSchemaObject @, schema, ( (x, node, out, path)->
       if x is undefined and node.optional == true
         out[path] = true
-        return
+        return x
+      console.log 'node', node, x
       klass = node.type[0] or node.type
       if klass is String
         if _.isString(x) then out[path] = true else out[path] = false
@@ -111,33 +172,36 @@ class Base
       else if klass is Date
         if _.isDate(x) then out[path] = true else out[path] = false
       else if x instanceof klass
-        return
+        return x
       else
         out[path] = false
-    ), recip
+      return x
+    ), recip, false
 
     console.log 'recip', recip
     if not _.all(_.flatten(_.values(recip)))
-      console.log 'resulta que not all are valid'
       throw 'not all are valid'
 
     doc = visitSchemaObject @, schema, (x, node) ->
+
       klass = node.type[0] or node.type
-      console.log '-----saving', x, klass
       if klass
-        if klass.prototype instanceof Base
+        if klass.prototype instanceof Base and not x._id
           x.save()
-          x._id
+          return x
+          #return x._id
         else if klass.prototype instanceof InLine
           for attr, value of x
-            if value instanceof Base
+            if value instanceof Base and not value._id
               value.save()
-          x
+          return x
         else
           x
+      return x
 
     if @_id is undefined
       @_id = @constructor.collection.insert(doc)
+
     else
       @constructor.collection.update(@_id, {$set: doc})
 
@@ -150,10 +214,10 @@ class InLine
       if _.isFunction(value)
         continue
       klass = schema[key].type
-      #if klass.prototype instanceof InLine or klass.prototype instanceof Base
-      #  @[key] = new klass value
-      #else
-      @[key] = value
+      if klass.prototype instanceof InLine or klass.prototype instanceof Base
+        @[key] = new klass value
+      else
+        @[key] = value
 
 soop = {}
 soop.Base  = Base
