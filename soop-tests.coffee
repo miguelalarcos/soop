@@ -64,3 +64,7 @@ describe 'suite basics', ->
     console.log p
     p.save()
     console.log p
+    console.log '------------ FINDONE -------------'
+    p2 = Person.findOne({_id:p._id})
+    console.log p2
+    test.equal p, p2

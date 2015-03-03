@@ -21,13 +21,14 @@ visitSchemaArray = (array, schema, func, out, flatten, path)->
 
 
 visitSchemaObject = (obj, schema, func, out, prev, flatten, path) ->
-  console.log '-------->',obj, schema, 'func', out, prev, flatten, path
+
   base = path or ''
   ret = {}
-  console.log 'prev', prev
+
   prev = out
 
   for key, value of obj
+    console.log obj, key, value
     if not _.isFunction(value)
       out[key] = {}
 
@@ -35,20 +36,23 @@ visitSchemaObject = (obj, schema, func, out, prev, flatten, path) ->
     if _.isFunction(obj[key]) #or key == '_id'
       continue
     if key == '_id'
-      ret[key] = func(value, {type: String}, out, prev, key, flatten, path)
+      #ret[key] =
+      func(value, {type: String}, out, prev, key, flatten, path)
     else if _.isArray(value)
       ret[key] = visitSchemaArray(value, schema[key], func, out, flatten, path)
     else if _.isObject(value) and not _.isFunction(value) and not (value instanceof Base) and not (value instanceof InLine)
-      console.log 'ALERTA 1: ', _.isString(out[key])
+
       ret[key] = new schema[key].type(visitSchemaObject(value, schema[key].type.schema, func, out[key], prev, flatten, path))
       func(value, schema[key], out[key], prev, key, flatten, path) # #########################################
-      #console.log 'ALERTA: ', out[key]
-      #visitSchemaObject(value, schema[key].type.schema, func, out[key], prev, flatten, path)
+    else if schema[key] and schema[key].type instanceof Base and _.isString(value)
+      console.log '***************', value
+      ret[key] = new schema[key].type(visitSchemaObject({key:value}, schema[key].type.schema, func, out[key], prev, flatten, path))
+      func(value, schema[key], out[key], prev, key, flatten, path) # #########################################
     else
       if value instanceof Base or value instanceof InLine
         ret[key] = value
         func(value, schema[key], out[key], prev, key, flatten, path) # #########################################
-        console.log 'ALERTA 2: ', _.isString(out[key]), out, key
+        console.log '***************>', value
         visitSchemaObject(value, schema[key].type.schema, func, {}, {}, flatten, path)
       else
         ret[key] = value
@@ -63,6 +67,9 @@ visitSchemaObject = (obj, schema, func, out, prev, flatten, path) ->
 
 class Base
   constructor: (args, doFindOne)->
+    #console.log 'constructor', args
+    if _.isString(args)
+      args = {_id: args}
     if doFindOne is undefined
       doFindOne = true
 
@@ -73,13 +80,19 @@ class Base
         args = @constructor.collection.findOne(args._id)
 
     schema = @constructor.schema
-    out = {}
-    console.log 'ALERTA 3: ', _.isString(@)
-    values = visitSchemaObject args, schema, (->), out, @
+    console.log '**************', args
+    values = visitSchemaObject args, schema, (->), {}, {}
 
     for key, value of values
       if not _.isFunction(value)
         @[key] = value
+
+  @findOne: (selector)->
+    klass = @
+    #if selector is undefined or selector is null
+    #  selector = {}
+    #new klass(@collection.findOne(selector), false)
+    new klass(selector, true)
 
   save: ->
     doc = {}
@@ -112,7 +125,6 @@ class Base
         throw 'not all are valid'
     console.log '**************************************************************************'
     doc = {}
-    console.log 'ALERTA 4: ', _.isString(@)
     visitSchemaObject @, schema,((x, node, out, prev, key, flatten, path) ->
 
       if x instanceof Base
