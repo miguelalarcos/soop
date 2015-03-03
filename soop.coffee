@@ -72,13 +72,13 @@ visitSchemaArray = (array, schema, func, replace, flatten, path)->
   ret
 
 visitSchemaObject = (obj, schema, func, replace, flatten, path) ->
-  console.log 'visitSchemaObject', obj
   base = path or ''
   #ret = {}
 
   for key, value of obj
     path = base + ':' + key
     if _.isFunction(obj[key]) or key == '_id'
+      console.log '         continue', key
       continue
     #if key == '_id'
     #  ret[key] = func(value, {type: String}, flatten, path)
@@ -118,6 +118,9 @@ class Base
       @_id = args._id
       if doFindOne
         args = @constructor.collection.findOne(args._id)
+        console.log 'from database', @, args
+        #delete args.constructor
+        #delete args.save
     #else
     #  @_id = null
 
@@ -126,14 +129,15 @@ class Base
     values = visitSchemaObject args, schema, ((x, node)->
       klass = node.type[0] or node.type
       if klass and klass.prototype instanceof Base and not (x instanceof  Base)
-        new klass x
+        new klass x, doFindOne
       else if klass and klass.prototype instanceof InLine and not (x instanceof InLine)
         new klass x
       else
         x), true
 
     for key, value of values
-      @[key] = value
+      if not _.isFunction(value)
+        @[key] = value
 
 
   @find : (selector) ->
@@ -146,7 +150,8 @@ class Base
     klass = @
     if selector is undefined or selector is null
       selector = {}
-    new klass(@collection.findOne(selector), false)
+    #new klass(@collection.findOne(selector), false)
+    new klass(selector, true)
 
   save: ->
     doc = {}
@@ -183,7 +188,6 @@ class Base
       throw 'not all are valid'
 
     doc = visitSchemaObject @, schema, (x, node) ->
-
       klass = node.type[0] or node.type
       if klass
         if klass.prototype instanceof Base and not x._id
@@ -199,9 +203,11 @@ class Base
           x
       return x
 
+    #delete doc.constructor
+    #delete doc.save
     if @_id is undefined
       @_id = @constructor.collection.insert(doc)
-
+      console.log 'inserted', doc
     else
       @constructor.collection.update(@_id, {$set: doc})
 

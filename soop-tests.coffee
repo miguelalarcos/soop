@@ -48,7 +48,7 @@ describe 'suite basics', ->
     Meteor.call 'delete'
 
   afterEach (test) ->
-    Meteor.call 'delete'
+    #Meteor.call 'delete'
 
   it.skip 'test empty', (test) ->
     p1 = new Person {}
@@ -139,10 +139,15 @@ describe 'suite basics', ->
             text: 'insert coin'
             ref: [[[new B x: 'game over!']]]
       p.complex = c
-      #console.log p
+      console.log p
       p.save()
       console.log 'person', p
-      p2 = Person.findOne(p._id)
+      p2 = Person.findOne({_id: p._id})
       console.log 'person2', p2
+
+      console.log _.isEqual(p, p2)
+      test.equal p, p2
+
     catch error
       console.log error
+      test.equal 1, 0
