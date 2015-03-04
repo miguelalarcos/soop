@@ -108,7 +108,7 @@ describe 'suite basics', ->
     Meteor.call 'delete'
 
   afterEach (test) ->
-    Meteor.call 'delete'
+    #Meteor.call 'delete'
 
   it 'test new A', (test)->
     a1 = new A

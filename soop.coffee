@@ -125,6 +125,22 @@ soop.Base  = Base
 soop.InLine = InLine
 ###
 
+save_array = (array, schema)->
+  ret = []
+  for v in array
+    if _.isArray(v)
+      ret.push save_array(v, schema[0])
+    else if _.isObject(v) and not (v instanceof Base)
+      ret.push save(v, schema[0])
+    else if v instanceof Base
+      save(v, schema[0])
+      ret.push v._id
+      console.log 'ENTRO', v._id
+    else
+      ret.push v
+  console.log ret
+  return ret
+
 save = (obj, schema)->
 
   ret = {}
@@ -134,15 +150,17 @@ save = (obj, schema)->
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
-    #if _.isArray(value)
-    #  ret[key] = save_array(value, schema[key].type)
+    if _.isArray(value)
+      ret[key] = save_array(value, schema[key].type)
+      console.log key, ret[key]
+      continue
     #else if _.isObject(value) and not (value instanceof Base)
     #  doc = save(value, schema[key].type.schema)
     #  ret[key] = doc
     if value instanceof Base
       doc = save(value, schema[key].type.schema)
       ret[key] = doc._id #value._id
-    if value instanceof InLine
+    if value instanceof InLine # else if no funciona, averiguar por qué
       doc = save(value, schema[key].type.schema)
       ret[key] = doc
     else
@@ -161,7 +179,8 @@ createArray = (value, schema)->
       ret.push createArray(v, schema[0])
     else
       if schema[0].prototype instanceof Base or schema[0].prototype instanceof InLine
-        ret.push new schema[0](create(v, schema[0]))
+        console.log '2) llamo a create con schema', schema
+        ret.push new schema[0](create(v, schema))
       else
         ret.push v #create(v, schema[0])
   ret
@@ -169,8 +188,11 @@ createArray = (value, schema)->
 create = (obj, schema)->
   #if _.isArray(obj)
   #  return createArray(obj, schema.type)
-  #if _.isString(obj)
-  #  return new schema(obj)
+
+  if _.isString(obj)
+    console.log '************************* schema', obj, schema, schema[0]
+    return new (schema[0])({_id: obj})
+
   #if obj instanceof Base
   #  ret = obj
   #else
@@ -198,6 +220,7 @@ class Base
         args = @constructor.collection.findOne(args._id)
 
     schema = @constructor.schema
+    console.log '1) llamo a create con schema', schema
     values = create args, schema
 
     for key, value of values
