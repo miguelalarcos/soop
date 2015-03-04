@@ -1,19 +1,15 @@
-person = new Mongo.Collection('TestPerson')
 a = new Mongo.Collection 'TestA'
-b = new Mongo.Collection 'TestB'
+c = new Mongo.Collection 'TestC'
+
 
 Meteor.methods
   'delete': ->
-    person.remove({})
     a.remove({})
-    b.remove({})
+    c.remove({})
 
-person.allow
-  insert: -> true
-  update: -> true
 a.allow
   insert: -> true
   update: -> true
-b.allow
+c.allow
   insert: -> true
   update: -> true

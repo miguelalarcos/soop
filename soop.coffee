@@ -1,3 +1,4 @@
+###
 save_array = (array, schema)->
   ret = []
   for v in array
@@ -115,6 +116,117 @@ class InLine
         @[key] = new klass value
       else if _.isArray(value)
         @[key] = createArray value, schema[key].type
+      else
+        @[key] = value
+
+soop = {}
+soop.Base  = Base
+#soop.properties = properties
+soop.InLine = InLine
+###
+
+save = (obj, schema)->
+
+  ret = {}
+  #if _.isArray(obj)
+  #  return save_array(obj, schema.type)
+
+  for key, value of obj
+    if _.isFunction(value) or key == '_id'
+      continue
+    #if _.isArray(value)
+    #  ret[key] = save_array(value, schema[key].type)
+    #else if _.isObject(value) and not (value instanceof Base)
+    #  doc = save(value, schema[key].type.schema)
+    #  ret[key] = doc
+    if value instanceof Base
+      doc = save(value, schema[key].type.schema)
+      ret[key] = doc._id #value._id
+    if value instanceof InLine
+      doc = save(value, schema[key].type.schema)
+      ret[key] = doc
+    else
+      ret[key] = value
+
+  if obj instanceof Base
+    obj._save(ret)
+    ret._id = obj._id
+  return ret
+
+
+createArray = (value, schema)->
+  ret = []
+  for v in value
+    if _.isArray(v)
+      ret.push createArray(v, schema[0])
+    else
+      if schema[0].prototype instanceof Base or schema[0].prototype instanceof InLine
+        ret.push new schema[0](create(v, schema[0]))
+      else
+        ret.push v #create(v, schema[0])
+  ret
+
+create = (obj, schema)->
+  #if _.isArray(obj)
+  #  return createArray(obj, schema.type)
+  #if _.isString(obj)
+  #  return new schema(obj)
+  #if obj instanceof Base
+  #  ret = obj
+  #else
+  #  ret = {}
+  ret = {}
+  for key, value of obj
+    if _.isFunction(value) or key == '_id'
+      continue
+    if _.isArray(value)
+      ret[key] = createArray(value, schema[key])
+    else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
+      ret[key] = new schema[key].type(value, false)
+    else
+      ret[key] = value
+  return ret
+
+class Base
+  constructor: (args, doFindOne)->
+    doFindOne = doFindOne or true
+    args = args or {}
+
+    if args._id
+      @_id = args._id
+      if doFindOne
+        args = @constructor.collection.findOne(args._id)
+
+    schema = @constructor.schema
+    values = create args, schema
+
+    for key, value of values
+      if not _.isFunction(value)
+        @[key] = value
+
+  _save: (doc) ->
+    if doc._id is undefined
+      @_id = @constructor.collection.insert(doc)
+    else
+      @constructor.collection.update(doc._id, {$set: doc})
+
+  save: ->
+    save(@, @constructor.schema)
+
+  @findOne: (_id) ->
+    new @({_id: _id})
+
+class InLine
+  constructor: (args)->
+    schema = @constructor.schema
+    for key, value of args
+      #if _.isFunction(value)
+      #  continue
+      klass = schema[key].type
+      if klass.prototype instanceof InLine or klass.prototype instanceof Base
+        @[key] = new klass value
+      else if _.isArray(value)
+        @[key] = createArray value, klass #schema[key].type
       else
         @[key] = value
 
