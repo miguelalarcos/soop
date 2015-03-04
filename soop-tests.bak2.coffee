@@ -51,6 +51,7 @@ describe 'suite basics', ->
     #Meteor.call 'delete'
 
   it 'test', (test)->
+
     p = new Person {firstName: 'Miguel'}
     c = new Complex
       r:50
@@ -60,9 +61,9 @@ describe 'suite basics', ->
           text: 'insert coin'
           ref: [[[new B x: 'game over!']]]
     p.complex = c
-    #console.log c
     #console.log p
-    console.log '--------- SAVE --------------'
     p.save()
-    console.log p
-
+    console.log '------------ FINDONE -------------'
+    p2 = Person.findOne({_id:p._id})
+    #console.log p2
+    #test.equal p, p2
