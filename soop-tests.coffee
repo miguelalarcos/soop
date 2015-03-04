@@ -33,7 +33,7 @@ describe 'suite basics', ->
     Meteor.call 'delete'
 
   afterEach (test) ->
-    #Meteor.call 'delete'
+    Meteor.call 'delete'
 
   it 'test new A + validate false', (test)->
     a1 = new A
