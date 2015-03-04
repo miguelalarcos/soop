@@ -35,7 +35,7 @@ describe 'suite basics', ->
   afterEach (test) ->
     #Meteor.call 'delete'
 
-  it 'test new A', (test)->
+  it 'test new A + validate false', (test)->
     a1 = new A
       a: 'hello world'
 
@@ -151,7 +151,7 @@ describe 'suite basics', ->
     doc = a.findOne()
     test.isTrue _.isString(doc.a3.b3[0])
 
-  it 'test validate A+C+B+C+[C]', (test)->
+  it 'test validate true A+C+B+C+[C]', (test)->
     a1 = new A
       a: 'hello world'
       a2: new C

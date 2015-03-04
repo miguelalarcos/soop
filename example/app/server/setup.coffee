@@ -1,2 +1,0 @@
-person.remove({})
-car.remove({})
