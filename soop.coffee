@@ -1,6 +1,3 @@
-findOne = ()->
-
-
 save_array = (array, schema)->
   ret = []
   for v in array
@@ -16,54 +13,58 @@ save_array = (array, schema)->
   return ret
 
 save = (obj, schema)->
-  console.log '--->save', obj, schema
   ret = {}
   if _.isArray(obj)
-    console.log 'ALERTA0', obj
     return save_array(obj, schema.type)
+  #if _.isObject(obj) and schema.prototype instanceof Base
+  #  z = new schema(obj)
+  #  z._save(obj)
+  #  return z._id
+
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
     if _.isArray(value)
-      console.log 'ALERTA', key, value
       #return save_array(value, schema[key].type)
       ret[key] = save_array(value, schema[key].type)
     else if _.isObject(value) and not (value instanceof Base)
       doc = save(value, schema[key].type.schema)
       ret[key] = doc
-      console.log 'ret1', ret, value
     else if _.isObject(value) and value instanceof Base
       doc = save(value, schema[key].type.schema)
       ret[key] = value._id # doc._id?
-      console.log 'ret2', ret
     else
       ret[key] = value
-      console.log 'ret3', ret
 
   if obj instanceof Base
-    console.log '_save', obj, ret
     obj._save(ret)
+    ret._id = obj._id
   return ret
 
 createArray = (value, schema)->
-
   ret = []
   for v in value
-    ret.push create(v, schema) # ??
+    if _.isArray(v)
+      ret.push createArray(v, schema[0])
+    else
+      ret.push create(v, schema[0])
   ret
 
 create = (obj, schema)->
-
   if _.isArray(obj)
-
-    createArray(obj, schema.type)
-  ret = {}
+    return createArray(obj, schema.type)
+  if _.isString(obj)
+    console.log schema
+    return new schema(obj)
+  if obj instanceof Base
+    ret = obj
+  else
+    ret = {}
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
     if _.isArray(value)
-
-      createArray(value, schema[key])
+      ret[key] = createArray(value, schema[key])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret[key] = new schema[key].type(value)
     else
@@ -112,6 +113,8 @@ class InLine
       klass = schema[key].type
       if klass.prototype instanceof InLine or klass.prototype instanceof Base
         @[key] = new klass value
+      else if _.isArray(value)
+        @[key] = createArray value, schema[key].type
       else
         @[key] = value
 

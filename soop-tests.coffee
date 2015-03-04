@@ -68,5 +68,6 @@ describe 'suite basics', ->
     console.log '--------- FINDONE --------------'
     p2 = Person.findOne(p._id)
     console.log p2
+    test.equal p, p2
 
 
