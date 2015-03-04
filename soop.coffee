@@ -1,51 +1,71 @@
+findOne = ()->
+
+
 save_array = (array, schema)->
-  console.log 'save_array', schema
   ret = []
-  for v, i in array
+  for v in array
     if _.isArray(v)
-      ret[i] = save_array(v, schema[0])
-    else
+      ret.push save_array(v, schema[0])
+    else if _.isObject(v) and not (v instanceof Base)
+      ret.push save(v, schema[0])
+    else if v instanceof Base
       save(v, schema[0])
+      ret.push v._id
+    else
+      ret.push v
   return ret
 
 save = (obj, schema)->
-  console.log 'OBJ', obj
+  console.log '--->save', obj, schema
   ret = {}
   if _.isArray(obj)
+    console.log 'ALERTA0', obj
     return save_array(obj, schema.type)
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
     if _.isArray(value)
-      return save_array(value, schema[key].type)
+      console.log 'ALERTA', key, value
+      #return save_array(value, schema[key].type)
+      ret[key] = save_array(value, schema[key].type)
     else if _.isObject(value) and not (value instanceof Base)
       doc = save(value, schema[key].type.schema)
       ret[key] = doc
-      console.log 'ret[key] = value', key, value
+      console.log 'ret1', ret, value
     else if _.isObject(value) and value instanceof Base
-      save(value, schema[key].type.schema)
-      console.log 'ret[key] = value._id', key, value, value._id
-      ret[key] = value._id
+      doc = save(value, schema[key].type.schema)
+      ret[key] = value._id # doc._id?
+      console.log 'ret2', ret
     else
       ret[key] = value
+      console.log 'ret3', ret
 
   if obj instanceof Base
-    console.log 'obj._save(ret)', ret
+    console.log '_save', obj, ret
     obj._save(ret)
   return ret
 
+createArray = (value, schema)->
+
+  ret = []
+  for v in value
+    ret.push create(v, schema) # ??
+  ret
+
 create = (obj, schema)->
+
+  if _.isArray(obj)
+
+    createArray(obj, schema.type)
   ret = {}
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
-    if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
-      ret[key] = new schema[key].type(value)
     if _.isArray(value)
-      ret = []
-      for v in value
-        ret.push create(v, schema[key])
-      return ret
+
+      createArray(value, schema[key])
+    else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
+      ret[key] = new schema[key].type(value)
     else
       ret[key] = value
   return ret
@@ -63,6 +83,7 @@ class Base
       if doFindOne
         args = @constructor.collection.findOne(args._id)
 
+
     schema = @constructor.schema
     values = create args, schema
 
@@ -75,10 +96,12 @@ class Base
       @_id = @constructor.collection.insert(doc)
     else
       @constructor.collection.update(doc._id, {$set: doc})
-  save: ->
-    doc = save(@, @constructor.schema, @constructor.collection)
-    @_save(doc)
 
+  save: ->
+    save(@, @constructor.schema, @constructor.collection)
+
+  @findOne: (_id) ->
+    new @({_id: _id})
 
 class InLine
   constructor: (args)->

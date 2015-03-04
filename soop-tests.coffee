@@ -65,4 +65,8 @@ describe 'suite basics', ->
     console.log '--------- SAVE --------------'
     p.save()
     console.log p
+    console.log '--------- FINDONE --------------'
+    p2 = Person.findOne(p._id)
+    console.log p2
+
 
