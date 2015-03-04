@@ -1,78 +1,3 @@
-###
-person = new Mongo.Collection 'TestPerson'
-a = new Mongo.Collection 'TestA'
-b = new Mongo.Collection 'TestB'
-
-class B extends soop.Base
-  @collection: b
-  @schema:
-    x:
-      type: String
-
-class Text extends soop.InLine
-  @schema:
-    text:
-      type: String
-    ref:
-      type: [[[B]]]
-
-class A extends soop.Base
-  @collection: a
-  @schema:
-    x:
-      type: Text
-
-class Complex extends soop.InLine
-  @schema:
-    r:
-      type: Number
-    i:
-      type: Number
-    a:
-      type: A
-
-class Person extends soop.Base
-  @collection: person
-  @schema :
-    firstName:
-      type: String
-    lastName:
-      type: String
-      optional: true
-    complex:
-      type: Complex
-
-
-
-describe 'suite basics', ->
-  beforeEach (test)->
-    Meteor.call 'delete'
-
-  afterEach (test) ->
-    #Meteor.call 'delete'
-
-  it 'test', (test)->
-    p = new Person {firstName: 'Miguel'}
-    c = new Complex
-      r:50
-      i:70
-      a: new A
-        x: new Text
-          text: 'insert coin'
-          ref: [[[new B x: 'game over!']]]
-    p.complex = c
-    #console.log c
-    #console.log p
-    console.log '--------- SAVE --------------'
-    p.save()
-    console.log p
-    console.log '--------- FINDONE --------------'
-    p2 = Person.findOne(p._id)
-    console.log p2
-    test.equal p, p2
-
-###
-
 a = new Mongo.Collection 'TestA'
 c = new Mongo.Collection 'TestC'
 
@@ -115,6 +40,7 @@ describe 'suite basics', ->
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
+    test.isFalse _.all(soop.validate(a1, A.schema))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -208,7 +134,6 @@ describe 'suite basics', ->
     test.equal a1, a2
 
   it 'test save+findOne A+C+B+C+[C]', (test)->
-    console.log '**********************+'
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -221,8 +146,21 @@ describe 'suite basics', ->
         b4: [1,2,3,4,5]
 
     a1.save()
-    console.log '------------ FINDONE --------------'
     a2 = A.findOne(a1._id)
-    console.log a1
-    console.log a2
     test.equal a1, a2
+    doc = a.findOne()
+    test.isTrue _.isString(doc.a3.b3[0])
+
+  it 'test validate A+C+B+C+[C]', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+        b3: [new C c:'atari']
+        b4: [1,2,3,4,5]
+
+    test.isTrue _.all(soop.validate(a1, A.schema))
