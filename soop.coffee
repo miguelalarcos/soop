@@ -1,16 +1,30 @@
 _validate = (x, klass)->
   if x is undefined and klass.optional == true
-    return true
+    return [true, '']
   if klass is String
-    if _.isString(x) then true else false
+    if _.isString(x)
+      {v:true, m:''}
+    else
+      {v:false, m: x + ' must be String'}
   else if klass is Number
-    if _.isNumber(x) then true else false
+    if _.isNumber(x)
+      {v:true, m:''}
+    else
+      {v:false. x + ' must be Number'}
   else if klass is Boolean
-    if _.isBoolean(x) then true else false
+    if _.isBoolean(x)
+      {v:true, m:''}
+    else
+      {v:false,  m: x + ' must be a Boolean'}
   else if klass is Date
-    if _.isDate(x) then true else false
+    if _.isDate(x)
+      {v:true, m:''}
+    else
+      {v:false,  m: x + ' must be a Date'}
+  else if x instanceof klass
+    {v:true, m:''}
   else
-    false
+    {v:false,  m: x + ' must be of type ' + klass}
 
 validate = (obj, schema) ->
   ret = []
@@ -29,6 +43,7 @@ validate = (obj, schema) ->
     else if _.isArray(value)
       for v in value
         if v instanceof Base or v instanceof InLine
+          ret.push _validate(v, schema[key].type[0])
           ret.push validate(v, schema[key].type[0].schema)
         else
           ret.push _validate(v, schema[key].type[0])
@@ -146,3 +161,4 @@ soop.Base  = Base
 #soop.properties = properties
 soop.InLine = InLine
 soop.validate = validate
+

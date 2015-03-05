@@ -25,6 +25,7 @@ class A extends soop.Base
       type: String
     a2:
       type: C
+      optional: false
     a3:
       type: B
 
@@ -40,7 +41,7 @@ describe 'suite basics', ->
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
-    test.isFalse _.all(soop.validate(a1, A.schema))
+    test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -148,8 +149,8 @@ describe 'suite basics', ->
     a1.save()
     a2 = A.findOne(a1._id)
     test.equal a1, a2
-    #doc = a.findOne()
-    #test.isTrue _.isString(doc.a3.b3[0])
+    #doc = a.findOne(a1._id)
+    #test.isTrue _.isString(doc.a3.b3[0])  # fail in the server travis; test again
 
   it 'test validate true A+C+B+C+[C]', (test)->
     a1 = new A
@@ -163,4 +164,23 @@ describe 'suite basics', ->
         b3: [new C c:'atari']
         b4: [1,2,3,4,5]
 
-    test.isTrue _.all(soop.validate(a1, A.schema))
+    test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
+
+  it 'test types A+C+B+C+[C]', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+        b3: [new C c:'atari']
+        b4: [1,2,3,4,5]
+    a1.save()
+    a2 = A.findOne(a1._id)
+    test.isTrue a2 instanceof A
+    test.isTrue a2.a2 instanceof C
+    test.isTrue a2.a3 instanceof B
+    test.isTrue a2.a3.b2 instanceof C
+    test.isTrue a2.a3.b3[0] instanceof C
