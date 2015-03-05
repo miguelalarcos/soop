@@ -210,3 +210,29 @@ describe 'suite basics', ->
 
     #doc = a.findOne(a1._id) #
     #test.isTrue _.isString(doc.a3.b5[0][0])  # fail in the server travis; test again
+
+
+  it 'test properties', (test)->
+    console.log '1) ======================================='
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b3: [new C c:'atari']
+
+    soop.properties(a1)
+    a1.save()
+    a1.prop_a = 7
+    a1.a2.prop_c = 'mundo'
+    a1.a3.prop_b = 'hola'
+    a1.a3.b3[0].prop_c = 'nintendo'
+    a1.save()
+    a2 = A.findOne(a1._id)
+    test.equal a2.a3.b3[0].c, 'nintendo'
+    console.log '2) ======================================='
+
+
+
+

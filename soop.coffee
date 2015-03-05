@@ -50,7 +50,7 @@ validate = (obj, schema) ->
     else
       obj2[key] = obj[key]
   for key, value of obj2
-    if _.isFunction(value) or key == '_id'
+    if _.isFunction(value) or key == '_id' or key == '_dirty'
       continue
     if value instanceof Base or value instanceof InLine
       r = validate(value, schema[key].type.schema)
@@ -92,7 +92,7 @@ save = (obj, schema)->
   toBDD = {}
 
   for key, value of obj
-    if _.isFunction(value) or key == '_id'
+    if _.isFunction(value) or key == '_id' or key == '_dirty'
       continue
     if _.isArray(value)
       [ret[key], toBDD[key]] = save_array(value, schema[key].type)
@@ -139,7 +139,7 @@ create = (obj, schema)->
 
   ret = {}
   for key, value of obj
-    if _.isFunction(value) or key == '_id'
+    if _.isFunction(value) or key == '_id' or key == '_dirty'
       continue
     if _.isArray(value)
       ret[key] = createArray(value, schema[key])
@@ -153,6 +153,7 @@ create = (obj, schema)->
 
 class Base
   constructor: (args, doFindOne)->
+    @_dirty = []
     doFindOne = doFindOne or true
     args = args or {}
 
@@ -172,10 +173,24 @@ class Base
         @[key] = value
 
   _save: (doc) ->
-    if doc._id is undefined
+    #if doc._id is undefined
+    if @_id is undefined
       @_id = @constructor.collection.insert(doc)
+      console.log 'insertado', @_id
+      @_dirty = []
     else
-      @constructor.collection.update(doc._id, {$set: doc})
+      out = getMongoSet(@)
+      for elem in out
+        if elem.object._dirty.length == 0
+          continue
+        doc = {}
+        for pv in elem.paths
+          doc[pv.path[1..]] = pv.value
+        #console.log elem, '{$set:}', doc
+        if elem.object.constructor.collection
+          console.log 'updateo', elem._id, doc
+          elem.object.constructor.collection.update(elem._id, {$set: doc})
+        elem.object._dirty = []
 
   save: ->
     save(@, @constructor.schema)
@@ -186,6 +201,7 @@ class Base
 
 class InLine
   constructor: (args)->
+    @_dirty = []
     schema = @constructor.schema
     for key, value of args
       klass = schema[key].type
@@ -196,9 +212,64 @@ class InLine
       else
         @[key] = value
 
+getter_setter = (obj, attr) ->
+  get: -> obj[attr]
+  set: (value) ->
+    obj[attr] = value
+    if attr not in obj._dirty
+      obj._dirty.push attr
+
+properties = (obj) ->
+  if obj is undefined
+    return
+  for attr, value of obj.constructor.schema
+    if _.isArray(value.type) and obj[attr] isnt undefined
+      for v in obj[attr]
+        properties(v)
+      #return
+    else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj[attr] isnt undefined
+      properties(obj[attr])
+    else
+      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
+
+_getMongoSet = (prefix, obj, ret) ->
+
+  if _.isArray(obj)
+    if obj.length > 0
+      for v,i in obj #[0].constructor.schema # obj
+        if v instanceof Base or v instanceof InLine
+          #if obj[i] is undefined
+          #  return
+          ret.push { object: v, paths: [] }
+          _getMongoSet(prefix + '.' + i, v, ret)
+        else
+          null
+  else
+    if obj is undefined
+      return
+    for attr, value of obj.constructor.schema
+      if _.isArray(value.type)
+        _getMongoSet(prefix + '.' + attr, obj[attr], ret)
+      else if value.type.prototype instanceof Base or value.type.prototype instanceof InLine
+        if obj[attr] is undefined
+          continue
+        ret.push { object: obj[attr], paths: [] }
+        _getMongoSet(prefix + '.' + attr, obj[attr], ret)
+      else if attr in obj._dirty
+        for dct in ret
+          if _.isEqual(dct.object, obj)
+            dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
+            break
+
+getMongoSet = (obj) ->
+  out = [{object: obj, paths: []}]
+  _getMongoSet('', obj, out)
+  return out
+
+
 soop = {}
 soop.Base  = Base
-#soop.properties = properties
+soop.properties = properties
 soop.InLine = InLine
 soop.validate = validate
-
+soop.getMongoSet = getMongoSet
