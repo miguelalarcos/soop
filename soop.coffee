@@ -176,7 +176,6 @@ class Base
     #if doc._id is undefined
     if @_id is undefined
       @_id = @constructor.collection.insert(doc)
-      console.log 'insertado', @_id
       @_dirty = []
     else
       out = getMongoSet(@)
@@ -186,11 +185,9 @@ class Base
         doc = {}
         for pv in elem.paths
           doc[pv.path[1..]] = pv.value
-        #console.log elem, '{$set:}', doc
         if elem.object.constructor.collection
-          console.log 'updateo', elem._id, doc
-          elem.object.constructor.collection.update(elem._id, {$set: doc})
-        elem.object._dirty = []
+          elem.object.constructor.collection.update(elem.object._id, {$set: doc})
+          elem.object._dirty = []
 
   save: ->
     save(@, @constructor.schema)
@@ -232,7 +229,7 @@ properties = (obj) ->
     else
       Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
 
-_getMongoSet = (prefix, obj, ret) ->
+_getMongoSet = (prefix, obj, ret, baseParent) ->
 
   if _.isArray(obj)
     if obj.length > 0
@@ -241,7 +238,7 @@ _getMongoSet = (prefix, obj, ret) ->
           #if obj[i] is undefined
           #  return
           ret.push { object: v, paths: [] }
-          _getMongoSet(prefix + '.' + i, v, ret)
+          _getMongoSet(prefix + '.' + i, v, ret, baseParent)
         else
           null
   else
@@ -249,21 +246,29 @@ _getMongoSet = (prefix, obj, ret) ->
       return
     for attr, value of obj.constructor.schema
       if _.isArray(value.type)
-        _getMongoSet(prefix + '.' + attr, obj[attr], ret)
+        _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj)
       else if value.type.prototype instanceof Base or value.type.prototype instanceof InLine
         if obj[attr] is undefined
           continue
-        ret.push { object: obj[attr], paths: [] }
-        _getMongoSet(prefix + '.' + attr, obj[attr], ret)
+        if value.type.prototype instanceof InLine
+          ret.push { object: baseParent, paths: [] }
+          _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent)
+        else
+          ret.push { object: obj[attr], paths: [] }
+          _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj)
       else if attr in obj._dirty
         for dct in ret
-          if _.isEqual(dct.object, obj)
+          if obj instanceof InLine
+            comp = baseParent
+          else
+            comp = obj
+          if _.isEqual(dct.object, comp)
             dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
             break
 
 getMongoSet = (obj) ->
   out = [{object: obj, paths: []}]
-  _getMongoSet('', obj, out)
+  _getMongoSet('', obj, out, obj)
   return out
 
 

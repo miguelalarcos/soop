@@ -213,7 +213,6 @@ describe 'suite basics', ->
 
 
   it 'test properties', (test)->
-    console.log '1) ======================================='
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -230,8 +229,14 @@ describe 'suite basics', ->
     a1.a3.b3[0].prop_c = 'nintendo'
     a1.save()
     a2 = A.findOne(a1._id)
+
+    test.equal a2.a, 7
+    test.equal a2.a2.c, 'mundo'
+    test.equal a2.a3.b, 'hola'
     test.equal a2.a3.b3[0].c, 'nintendo'
-    console.log '2) ======================================='
+
+
+
 
 
 
