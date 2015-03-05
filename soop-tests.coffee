@@ -86,12 +86,12 @@ describe 'suite basics', ->
 
     test.equal a1.a3.b3[0].c, 'atari'
 
+
   it 'test save A', (test)->
     a1 = new A
       a: 'hello world'
 
     a1.save()
-    #test.isNotNull(a1._id)
     test.notEqual undefined, a1._id
 
   it 'test save A+C', (test)->
@@ -125,6 +125,7 @@ describe 'suite basics', ->
     test.equal a1, a2
 
   it 'test save+findOne A+C', (test)->
+
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -134,7 +135,9 @@ describe 'suite basics', ->
     a2 = A.findOne(a1._id)
     test.equal a1, a2
 
+
   it 'test save+findOne A+C+B+C+[C]', (test)->
+    console.log '1================================================'
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -149,8 +152,10 @@ describe 'suite basics', ->
     a1.save()
     a2 = A.findOne(a1._id)
     test.equal a1, a2
-    #doc = a.findOne(a1._id)
-    #test.isTrue _.isString(doc.a3.b3[0])  # fail in the server travis; test again
+    doc = a.findOne(a1._id)
+    console.log 'doc.a3.b3[0]', doc.a3.b3[0]
+    test.isTrue _.isString(doc.a3.b3[0])  # fail in the server travis; test again
+    console.log '2================================================'
 
   it 'test validate true A+C+B+C+[C]', (test)->
     a1 = new A
