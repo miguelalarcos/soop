@@ -1,6 +1,8 @@
 _validate = (x, klass)->
   if x is undefined and klass.optional == true
     return [true, '']
+  if x is undefined
+    return [false, 'value undefined']
   if klass is String
     if _.isString(x)
       {v:true, m:''}
@@ -21,10 +23,23 @@ _validate = (x, klass)->
       {v:true, m:''}
     else
       {v:false,  m: x + ' must be a Date'}
-  else if x instanceof klass
-    {v:true, m:''}
   else
-    {v:false,  m: x + ' must be of type ' + klass}
+    if x instanceof klass
+      {v:true, m:''}
+    else
+      {v:false,  m: x + ' must be of type ' + klass}
+
+validateArray = (value, schema)->
+  ret = []
+  for v in value
+    if _.isArray(v) #
+      ret.push validateArray(v, schema[0]) #
+    else if v instanceof Base or v instanceof InLine
+      ret.push _validate(v, schema[0])
+      ret.push validate(v, schema[0])
+    else
+      ret.push _validate(v, schema[0])
+  return ret
 
 validate = (obj, schema) ->
   ret = []
@@ -41,14 +56,13 @@ validate = (obj, schema) ->
       r = validate(value, schema[key].type.schema)
       ret = _.flatten(ret.concat(r))
     else if _.isArray(value)
-      for v in value
-        if v instanceof Base or v instanceof InLine
-          ret.push _validate(v, schema[key].type[0])
-          ret.push validate(v, schema[key].type[0].schema)
-        else
-          ret.push _validate(v, schema[key].type[0])
+      validateArray(value, schema[key].type)
     else
-      ret.push _validate(value, schema[key].type)
+      if _.isFunction(schema)
+        ret.push _validate(value, schema)
+      else
+        ret.push _validate(value, schema[key].type)
+
   return ret
 
 
@@ -57,9 +71,9 @@ save_array = (array, schema)->
   toBDD = []
   for v in array
     if _.isArray(v)
-      docs = save_array(v, schema[0])
+      [docs, docs2] = save_array(v, schema[0])
       ret.push docs
-      toBDD.push docs
+      toBDD.push docs2
     else if _.isObject(v) and not (v instanceof Base)
       [doc, doc2 ]= save(v, schema[0])
       ret.push doc
@@ -106,28 +120,28 @@ createArray = (value, schema)->
     if _.isArray(v)
       ret.push createArray(v, schema[0])
     else
-      if schema[0].prototype instanceof Base or schema[0].prototype instanceof InLine
-        console.log 'schema que viaja hacia create', v, schema
-        doc = create(v, schema[0])
-        ret.push new schema[0](doc)
+      klass = schema[0] or schema
+      if klass.prototype instanceof Base or klass.prototype instanceof InLine
+        doc = create(v, klass)
+        ret.push new klass(doc)
       else
         ret.push v
+      #if schema[0].prototype instanceof Base or schema[0].prototype instanceof InLine
+      #  doc = create(v, schema[0])
+      #  ret.push new schema[0](doc)
+      #else
+      #  ret.push v
   ret
 
 create = (obj, schema)->
-
   if _.isString(obj)
-    console.log 1, obj, schema
-    z = new (schema)({_id: obj})
-    console.log 2
-    return z
+    return new (schema)({_id: obj})
 
   ret = {}
   for key, value of obj
     if _.isFunction(value) or key == '_id'
       continue
     if _.isArray(value)
-      console.log 'llamamos a createArray con shcema y key', schema, key
       ret[key] = createArray(value, schema[key])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret[key] = new schema[key].type(value, false)
@@ -149,7 +163,6 @@ class Base
 
     schema = @constructor.schema
     if _.isString(args)
-      console.log 'llamo desde Base a create con args y schema', args, @constructor
       values = create args, @constructor
     else
       values = create args, schema
@@ -160,7 +173,6 @@ class Base
 
   _save: (doc) ->
     if doc._id is undefined
-      console.log 'DOC to be inserted', doc
       @_id = @constructor.collection.insert(doc)
     else
       @constructor.collection.update(doc._id, {$set: doc})
@@ -180,10 +192,6 @@ class InLine
       if klass.prototype instanceof InLine or klass.prototype instanceof Base
         @[key] = new klass value
       else if _.isArray(value)
-        console.log 'llamo a createArray con value, klass', value, klass
-        #for v, i in value
-        #  @[key] = []
-        #  @[key][i] = create value, klass
         @[key] = createArray value, klass
       else
         @[key] = value
