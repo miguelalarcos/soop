@@ -229,16 +229,16 @@ properties = (obj) ->
     else
       Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
 
-_getMongoSet = (prefix, obj, ret, baseParent) ->
+_getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
 
   if _.isArray(obj)
     if obj.length > 0
-      for v,i in obj #[0].constructor.schema # obj
+      for v,i in obj
         if v instanceof Base or v instanceof InLine
           #if obj[i] is undefined
           #  return
           ret.push { object: v, paths: [] }
-          _getMongoSet(prefix + '.' + i, v, ret, baseParent)
+          _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
         else
           null
   else
@@ -246,20 +246,22 @@ _getMongoSet = (prefix, obj, ret, baseParent) ->
       return
     for attr, value of obj.constructor.schema
       if _.isArray(value.type)
-        _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj)
+        _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj, obj._dirty)
       else if value.type.prototype instanceof Base or value.type.prototype instanceof InLine
         if obj[attr] is undefined
           continue
         if value.type.prototype instanceof InLine
           ret.push { object: baseParent, paths: [] }
-          _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent)
+          _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent, baseDirty)
         else
           ret.push { object: obj[attr], paths: [] }
-          _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj)
+          continue
+          _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj[attr], obj[attr]._dirty) # ####################
       else if attr in obj._dirty
         for dct in ret
           if obj instanceof InLine
             comp = baseParent
+            baseDirty.push(prefix + '.' + attr)
           else
             comp = obj
           if _.isEqual(dct.object, comp)
@@ -268,7 +270,7 @@ _getMongoSet = (prefix, obj, ret, baseParent) ->
 
 getMongoSet = (obj) ->
   out = [{object: obj, paths: []}]
-  _getMongoSet('', obj, out, obj)
+  _getMongoSet('', obj, out, obj, obj._dirty)
   return out
 
 

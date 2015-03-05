@@ -1,5 +1,7 @@
 a = new Mongo.Collection 'TestA'
 c = new Mongo.Collection 'TestC'
+x = new Mongo.Collection 'TestX'
+y = new Mongo.Collection 'TestY'
 
 class C extends soop.Base
   @collection: c
@@ -30,6 +32,27 @@ class A extends soop.Base
       optional: false
     a3:
       type: B
+
+class Z extends soop.InLine
+  @schema:
+    z:
+      type: String
+
+class Y extends soop.Base
+  @collection: y
+  @schema:
+    y:
+      type: Z
+    y2:
+      type: [Z]
+    y3:
+      type: [Number]
+
+class X extends soop.Base
+  @collection: x
+  @schema:
+    x:
+      type: Y
 
 describe 'suite basics', ->
   beforeEach (test)->
@@ -235,9 +258,44 @@ describe 'suite basics', ->
     test.equal a2.a3.b, 'hola'
     test.equal a2.a3.b3[0].c, 'nintendo'
 
+  it 'test XYZ', (test)->
+    x = new X
+      x: new Y
+        y: new Z
+          z: 'hello'
 
+    soop.properties(x)
+    x.save()
+    x.x.y.prop_z = 'world'
+    x.save()
 
+    x2 = X.findOne(x._id)
+    test.equal x2.x.y.z, 'world'
 
+  it 'test XY[Z]', (test)->
+    x = new X
+      x: new Y
+        y2: [new Z
+          z: 'hello']
 
+    soop.properties(x)
+    x.save()
+    x.x.y2[0].prop_z = 'world'
+    x.save()
 
+    x2 = X.findOne(x._id)
+    test.equal x2.x.y2[0].z, 'world'
+
+  it.skip 'test XY[number]', (test)->
+    x = new X
+      x: new Y
+        y3: [1]
+
+    soop.properties(x)
+    x.save()
+    x.x.y3[0] = 3
+    x.save()
+
+    x2 = X.findOne(x._id)
+    test.equal x2.x.y3[0], 3
 
