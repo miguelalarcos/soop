@@ -3,6 +3,8 @@ c = new Mongo.Collection 'TestC'
 x = new Mongo.Collection 'TestX'
 y = new Mongo.Collection 'TestY'
 x_collection = x
+a_collection = a
+c_collection = c
 
 class C extends soop.Base
   @collection: c
@@ -166,6 +168,7 @@ describe 'suite basics', ->
 
 
   it 'test save+findOne A+C+B+C+[C]', (test)->
+
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -215,12 +218,15 @@ describe 'suite basics', ->
         b3: [new C c:'atari']
         b4: [1,2,3,4,5]
     a1.save()
+
     a2 = A.findOne(a1._id)
+
     test.isTrue a2 instanceof A
     test.isTrue a2.a2 instanceof C
     test.isTrue a2.a3 instanceof B
     test.isTrue a2.a3.b2 instanceof C
     test.isTrue a2.a3.b3[0] instanceof C
+
 
   it 'test save+findOne A+C+B+C+[[C]]', (test)->
     a1 = new A
@@ -241,6 +247,7 @@ describe 'suite basics', ->
     #test.isTrue _.isString(doc.a3.b5[0][0])  # fail in the server travis; test again
 
   it 'test properties', (test)->
+
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -263,6 +270,8 @@ describe 'suite basics', ->
     test.equal a2.a2.c, 'mundo'
     test.equal a2.a3.b, 'hola'
     test.equal a2.a3.b3[0].c, 'nintendo'
+
+
 
   it 'test XYZ', (test)->
     x = new X
@@ -288,6 +297,7 @@ describe 'suite basics', ->
     #soop.properties(x)
     x.save()
     x.x.y2[0].z = 'world'
+
     x.save()
 
     x2 = X.findOne(x._id)
@@ -320,6 +330,7 @@ describe 'suite basics', ->
     test.equal x2.x.y3, [1,5]
 
   it 'test XYy3[number]b', (test)->
+    console.log '1) =============================================='
     x = new X
       x: new Y
         y3: [1]
@@ -328,9 +339,11 @@ describe 'suite basics', ->
     x.save()
     x.x = new Y
       y3: [2,5]
+    console.log x.x.y3
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x.y3, [2,5]
+    console.log '2) =============================================='
 
   it 'test XYy3[number]undfined', (test)->
     x = new X
@@ -345,3 +358,43 @@ describe 'suite basics', ->
     test.equal x2.x, undefined
     #x3 = x_collection.findOne(x._id)
     #test.equal x3.x, undefined
+
+describe 'suite update', ->
+  beforeEach (test)->
+    Meteor.call 'delete'
+    spies.create('update_A', a_collection, 'update')
+    spies.create('update_C', c_collection, 'update')
+
+  afterEach (test) ->
+    Meteor.call 'delete'
+    spies.restore('update_A')
+    spies.restore('update_C')
+
+  it 'test update call basic', (test)->
+    a1 = new A
+      a: 'hello world'
+
+    a1.save()
+    a1.a = 'game over!'
+    a1.save()
+    expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a: 'game over!'}, $unset: {}})
+
+  it 'test update call ', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+
+    a1.save()
+
+    a1.a2.c = undefined
+    a1.a3 = new B
+      b: 'amstrad'
+    a1.save()
+
+    expect(spies.update_C).to.have.been.calledWith(a1.a2._id, {$set:{}, $unset:{c: ''}})
+    #expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b:'amstrad'}}, $unset: {}})
