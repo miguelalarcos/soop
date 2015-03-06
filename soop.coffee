@@ -45,12 +45,13 @@ validate = (obj, schema) ->
   ret = []
   obj2 = {}
   for key in _.keys(schema)
-    if key not in _.keys(obj)
+    keys_obj_without_ = (w[1..] for w in _.keys(obj))
+    if key not in keys_obj_without_
       obj2[key] = undefined
     else
       obj2[key] = obj[key]
   for key, value of obj2
-    if _.isFunction(value) or key == '_id' or key == '_dirty'
+    if _.isFunction(value) or key == '_id' or key == '_dirty' or key == '_propertyCreated'
       continue
     if value instanceof Base or value instanceof InLine
       r = validate(value, schema[key].type.schema)
@@ -92,21 +93,21 @@ save = (obj, schema)->
   toBDD = {}
 
   for key, value of obj
-    if _.isFunction(value) or key == '_id' or key == '_dirty' or /^prop_/.test(key)
-      continue
-    if _.isArray(value)
-      [ret[key], toBDD[key]] = save_array(value, schema[key].type)
-    else if value instanceof Base
-      [doc, nothing] = save(value, schema[key].type.schema)
-      toBDD[key] = doc._id
-      ret[key] = doc
-    else if value instanceof InLine
-      [doc, doc2] = save(value, schema[key].type.schema)
-      ret[key] = doc
-      toBDD[key] = doc2
-    else
-      ret[key] = value
-      toBDD[key] = value
+    if not _.isFunction(value) and key != '_id' and key != '_dirty' and key != '_propertyCreated' and /^_/.test(key)
+      key = key[1..]
+      if _.isArray(value)
+        [ret[key], toBDD[key]] = save_array(value, schema[key].type)
+      else if value instanceof Base
+        [doc, nothing] = save(value, schema[key].type.schema)
+        toBDD[key] = doc._id
+        ret[key] = doc
+      else if value instanceof InLine
+        [doc, doc2] = save(value, schema[key].type.schema)
+        ret[key] = doc
+        toBDD[key] = doc2
+      else
+        ret[key] = value
+        toBDD[key] = value
 
   if obj instanceof Base
     obj._save(toBDD)
@@ -126,11 +127,6 @@ createArray = (value, schema)->
         ret.push new klass(doc)
       else
         ret.push v
-      #if schema[0].prototype instanceof Base or schema[0].prototype instanceof InLine
-      #  doc = create(v, schema[0])
-      #  ret.push new schema[0](doc)
-      #else
-      #  ret.push v
   ret
 
 create = (obj, schema)->
@@ -139,20 +135,25 @@ create = (obj, schema)->
 
   ret = {}
   for key, value of obj
-    if _.isFunction(value) or key == '_id' or key == '_dirty'
+    if _.isFunction(value) or key == '_id' or key == '_dirty' or key == '_propertyCreated'
       continue
-    if _.isArray(value)
-      ret[key] = createArray(value, schema[key])
-    else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
-      ret[key] = new schema[key].type(value, false)
-    else if _.isString(value) and schema[key] and schema[key].type.prototype instanceof Base
-      ret[key] = new (schema[key].type)({_id: value})
+    if /^_/.test(key)
+      key_ = key[1..]
     else
-      ret[key] = value
+      key_ = key
+    if _.isArray(value)
+      ret['_'+key_] = createArray(value, schema[key_])
+    else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
+      ret['_'+key_] = new schema[key_].type(value, false)
+    else if _.isString(value) and schema[key_] and schema[key_].type.prototype instanceof Base
+      ret['_'+key_] = new (schema[key_].type)({_id: value})
+    else
+      ret['_'+key_] = value
   return ret
 
 class Base
   constructor: (args, doFindOne)->
+
     @_dirty = []
     doFindOne = doFindOne or true
     args = args or {}
@@ -171,6 +172,11 @@ class Base
     for key, value of values
       if not _.isFunction(value)
         @[key] = value
+
+
+    if not @_propertyCreated
+      properties(@)
+      @_propertyCreated = true
 
   _save: (doc) ->
     #if doc._id is undefined
@@ -207,11 +213,15 @@ class InLine
     for key, value of args
       klass = schema[key].type
       if klass.prototype instanceof InLine or klass.prototype instanceof Base
-        @[key] = new klass value
+        @['_'+key] = new klass value
       else if _.isArray(value)
-        @[key] = createArray value, klass
+        @['_'+key] = createArray value, klass
       else
-        @[key] = value
+        @['_'+key] = value
+
+    if not @_propertyCreated
+      properties(@)
+      @_propertyCreated = true
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -224,23 +234,20 @@ setterArray = (array) ->
   (index, value) ->
     array[index] = value
 
-
-
 properties = (obj) ->
   if obj is undefined
     return
   for attr, value of obj.constructor.schema
-    if _.isArray(value.type) and obj[attr] isnt undefined
-      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
-      obj[attr].set = setterArray(obj[attr])
-      for v in obj[attr]
-        properties(v)
-      #return
-    else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj[attr] isnt undefined
-      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
-      properties(obj[attr])
+    if _.isArray(value.type) and obj['_' + attr] isnt undefined
+      Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
+      obj[attr].set = setterArray(obj['_' + attr])
+      #for v in obj['_' + attr]
+      #  properties(v)
+    else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj['_' + attr] isnt undefined
+      Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
+    #  properties(obj['_' + attr])
     else
-      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
+      Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
 
 _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar baseParent._dirty?
   if _.isArray(obj)
@@ -259,17 +266,17 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       return
     for attr, value of obj.constructor.schema
       if _.isArray(value.type)
-        _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj, obj._dirty)
+        _getMongoSet(prefix + '.' + attr, obj['_'+attr], ret, obj, obj._dirty)
       else if value.type.prototype instanceof Base or value.type.prototype instanceof InLine
         #if obj[attr] is undefined
         #  continue
         if value.type.prototype instanceof InLine
           ret.push { object: baseParent, paths: [] }
-          _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent, baseDirty)
+          _getMongoSet(prefix + '.' + attr, obj['_'+attr], ret, baseParent, baseDirty)
         else
-          ret.push { object: obj, paths: [{path: prefix + '.' + attr, value: obj[attr]}] }
+          ret.push { object: obj, paths: [{path: prefix + '.' + attr, value: obj['_'+attr]}] }
           continue
-      else if attr in obj._dirty
+      else if '_'+attr in obj._dirty
         for dct in ret
           if obj instanceof InLine
             comp = baseParent
@@ -277,7 +284,7 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           else
             comp = obj
           if _.isEqual(dct.object, comp)
-            dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
+            dct.paths.push {path: prefix + '.' +attr, value: obj['_'+attr]}
             break
 
 getMongoSet = (obj) ->

@@ -67,7 +67,7 @@ describe 'suite basics', ->
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
-    test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
+    #test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -88,6 +88,7 @@ describe 'suite basics', ->
           c: 'amstrad'
 
     test.equal a1.a3.b2.c, 'amstrad'
+
 
   it 'test new A+C+B', (test)->
     a1 = new A
@@ -235,7 +236,6 @@ describe 'suite basics', ->
     #doc = a.findOne(a1._id) #
     #test.isTrue _.isString(doc.a3.b5[0][0])  # fail in the server travis; test again
 
-
   it 'test properties', (test)->
     a1 = new A
       a: 'hello world'
@@ -245,15 +245,16 @@ describe 'suite basics', ->
         b: 'game over!'
         b3: [new C c:'atari']
 
-    soop.properties(a1)
+    #soop.properties(a1)
     a1.save()
-    a1.prop_a = 7
-    a1.a2.prop_c = 'mundo'
-    a1.a3.prop_b = 'hola'
-    a1.a3.b3[0].prop_c = 'nintendo'
+    a1.a = 7
+    a1.a2.c = 'mundo'
+    a1.a3.b = 'hola'
+    a1.a3.b3[0].c = 'nintendo'
     a1.save()
-    a2 = A.findOne(a1._id)
 
+    a2 = A.findOne(a1._id)
+    console.log a2
     test.equal a2.a, 7
     test.equal a2.a2.c, 'mundo'
     test.equal a2.a3.b, 'hola'
@@ -265,9 +266,9 @@ describe 'suite basics', ->
         y: new Z
           z: 'hello'
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
-    x.x.y.prop_z = 'world'
+    x.x.y.z = 'world'
     x.save()
 
     x2 = X.findOne(x._id)
@@ -280,9 +281,9 @@ describe 'suite basics', ->
         y2: [new Z
           z: 'hello']
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
-    x.x.y2[0].prop_z = 'world'
+    x.x.y2[0].z = 'world'
     x.save()
 
     x2 = X.findOne(x._id)
@@ -293,7 +294,7 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
     x.x.y3.set(0,  3)
     x.save()
@@ -306,9 +307,9 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
-    x.x.prop_y3 = [1,3]
+    x.x.y3 = [1,3]
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x.y3, [1,3]
@@ -318,9 +319,9 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
-    x.prop_x = new Y
+    x.x = new Y
       y3: [2,5]
     x.save()
     x2 = X.findOne(x._id)
@@ -331,9 +332,9 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    soop.properties(x)
+    #soop.properties(x)
     x.save()
-    x.prop_x = undefined
+    x.x = undefined
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x, undefined
