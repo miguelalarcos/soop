@@ -1,3 +1,11 @@
+array = (v) ->
+  v.set = setterArray(v)
+  #v._setted = true
+  return v
+
+#isValid = (obj) ->
+#  _.all( (x.v for x in soop.validate(obj, obj.constructor.schema ) ))
+
 _validate = (x, klass)->
   if x is undefined and klass.optional == true
     return [true, '']
@@ -183,6 +191,9 @@ class Base
       properties(@)
       @_propertyCreated = true
 
+  isValid : ->
+    _.all( (x.v for x in soop.validate(@, @constructor.schema ) ))
+
   _save: (doc) ->
     #if doc._id is undefined
 
@@ -227,6 +238,9 @@ class InLine
     if not @_propertyCreated
       properties(@)
       @_propertyCreated = true
+
+  isValid : ->
+    _.all( (x.v for x in soop.validate(@, @constructor.schema ) ))
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -304,3 +318,4 @@ soop.properties = properties
 soop.InLine = InLine
 soop.validate = validate
 soop.getMongoSet = getMongoSet
+soop.array = array

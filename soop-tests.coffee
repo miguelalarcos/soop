@@ -67,6 +67,8 @@ describe 'suite basics', ->
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
+    #test.isFalse soop.isValid(a1)
+    test.isFalse a1.isValid()
     #test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
 
   it 'test new A+C', (test)->
@@ -109,7 +111,7 @@ describe 'suite basics', ->
         b: 'game over!'
         b2: new C
           c: 'amstrad'
-        b3: [new C c:'atari']
+        b3: soop.array([new C c:'atari'])
 
     test.equal a1.a3.b3[0].c, 'atari'
 
@@ -197,7 +199,9 @@ describe 'suite basics', ->
         b4: [1,2,3,4,5]
         b5: [[new C c:'atari']]
 
-    test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
+    #test.isTrue soop.isValid(a1)
+    test.isTrue a1.isValid()
+    #test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
 
   it 'test types A+C+B+C+[C]', (test)->
     a1 = new A
@@ -309,10 +313,11 @@ describe 'suite basics', ->
 
     #soop.properties(x)
     x.save()
-    x.x.y3 = [1,3]
+    x.x.y3 = soop.array([1,3])
+    x.x.y3.set(1, 5)
     x.save()
     x2 = X.findOne(x._id)
-    test.equal x2.x.y3, [1,3]
+    test.equal x2.x.y3, [1,5]
 
   it 'test XYy3[number]b', (test)->
     x = new X
