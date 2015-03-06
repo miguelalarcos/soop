@@ -123,8 +123,13 @@ createArray = (value, schema)->
     else
       klass = schema[0] or schema
       if klass.prototype instanceof Base or klass.prototype instanceof InLine
-        doc = create(v, klass)
-        ret.push new klass(doc)
+        if _.isString(v)
+          ret.push new klass({_id: v})
+        else
+          ret.push v
+        #doc = create(v, klass) # #####################################################
+        #ret.push new klass(doc) # #####################################################
+
       else
         ret.push v
   ret
