@@ -2,6 +2,7 @@ a = new Mongo.Collection 'TestA'
 c = new Mongo.Collection 'TestC'
 x = new Mongo.Collection 'TestX'
 y = new Mongo.Collection 'TestY'
+x_collection = x
 
 class C extends soop.Base
   @collection: c
@@ -324,3 +325,17 @@ describe 'suite basics', ->
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x.y3, [2,5]
+
+  it 'test XYy3[number]undfined', (test)->
+    x = new X
+      x: new Y
+        y3: [1]
+
+    soop.properties(x)
+    x.save()
+    x.prop_x = undefined
+    x.save()
+    x2 = X.findOne(x._id)
+    test.equal x2.x, undefined
+    #x3 = x_collection.findOne(x._id)
+    #test.equal x3.x, undefined

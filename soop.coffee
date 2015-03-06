@@ -184,15 +184,18 @@ class Base
         if elem.object._dirty.length == 0
           continue
         doc = {}
+        unset = {}
         for pv in elem.paths
-          doc[pv.path[1..]] = pv.value
-        if elem.object.constructor.collection and not _.isEmpty(doc)
-          elem.object.constructor.collection.update(elem.object._id, {$set: doc})
+          if pv.value is undefined
+            unset[pv.path[1..]] = ''
+          else
+            doc[pv.path[1..]] = pv.value
+        if elem.object.constructor.collection and (not _.isEmpty(doc) or not _.isEmpty(unset))
+          elem.object.constructor.collection.update(elem.object._id, {$set: doc, $unset: unset})
           elem.object._dirty = []
 
   save: ->
     save(@, @constructor.schema)
-    #save(new @constructor, @.constructor.schema, true)
 
   @findOne: (_id) ->
     new @({_id: _id})
@@ -239,7 +242,7 @@ properties = (obj) ->
     else
       Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
 
-_getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
+_getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar baseParent._dirty?
   if _.isArray(obj)
     if obj.length > 0
       out = []
@@ -258,8 +261,8 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
       if _.isArray(value.type)
         _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj, obj._dirty)
       else if value.type.prototype instanceof Base or value.type.prototype instanceof InLine
-        if obj[attr] is undefined
-          continue
+        #if obj[attr] is undefined
+        #  continue
         if value.type.prototype instanceof InLine
           ret.push { object: baseParent, paths: [] }
           _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent, baseDirty)
@@ -270,7 +273,7 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
         for dct in ret
           if obj instanceof InLine
             comp = baseParent
-            baseDirty.push(prefix + '.' + attr) # es posible usar baseParent._dirty?
+            baseDirty.push(prefix + '.' + attr)
           else
             comp = obj
           if _.isEqual(dct.object, comp)
