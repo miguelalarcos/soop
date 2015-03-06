@@ -254,7 +254,7 @@ describe 'suite basics', ->
     a1.save()
 
     a2 = A.findOne(a1._id)
-    console.log a2
+
     test.equal a2.a, 7
     test.equal a2.a2.c, 'mundo'
     test.equal a2.a3.b, 'hola'
