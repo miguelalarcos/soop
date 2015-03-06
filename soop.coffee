@@ -92,7 +92,7 @@ save = (obj, schema)->
   toBDD = {}
 
   for key, value of obj
-    if _.isFunction(value) or key == '_id' or key == '_dirty'
+    if _.isFunction(value) or key == '_id' or key == '_dirty' or /^prop_/.test(key)
       continue
     if _.isArray(value)
       [ret[key], toBDD[key]] = save_array(value, schema[key].type)
@@ -174,6 +174,7 @@ class Base
 
   _save: (doc) ->
     #if doc._id is undefined
+
     if @_id is undefined
       @_id = @constructor.collection.insert(doc)
       @_dirty = []
@@ -185,7 +186,7 @@ class Base
         doc = {}
         for pv in elem.paths
           doc[pv.path[1..]] = pv.value
-        if elem.object.constructor.collection
+        if elem.object.constructor.collection and not _.isEmpty(doc)
           elem.object.constructor.collection.update(elem.object._id, {$set: doc})
           elem.object._dirty = []
 
@@ -216,31 +217,40 @@ getter_setter = (obj, attr) ->
     if attr not in obj._dirty
       obj._dirty.push attr
 
+setterArray = (array) ->
+  (index, value) ->
+    array[index] = value
+
+
+
 properties = (obj) ->
   if obj is undefined
     return
   for attr, value of obj.constructor.schema
     if _.isArray(value.type) and obj[attr] isnt undefined
+      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
+      obj[attr].set = setterArray(obj[attr])
       for v in obj[attr]
         properties(v)
       #return
     else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj[attr] isnt undefined
+      Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
       properties(obj[attr])
     else
       Object.defineProperty obj, 'prop_' + attr, getter_setter(obj, attr)
 
 _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
-
   if _.isArray(obj)
     if obj.length > 0
+      out = []
+      ret.push {object: baseParent, paths: out}
       for v,i in obj
         if v instanceof Base or v instanceof InLine
-          #if obj[i] is undefined
-          #  return
           ret.push { object: v, paths: [] }
           _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
         else
-          null
+          out.push {path: prefix + '.' + i, value: v}
+          baseDirty.push(prefix + '.' + i)
   else
     if obj is undefined
       return
@@ -254,14 +264,13 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) ->
           ret.push { object: baseParent, paths: [] }
           _getMongoSet(prefix + '.' + attr, obj[attr], ret, baseParent, baseDirty)
         else
-          ret.push { object: obj[attr], paths: [] }
+          ret.push { object: obj, paths: [{path: prefix + '.' + attr, value: obj[attr]}] }
           continue
-          _getMongoSet(prefix + '.' + attr, obj[attr], ret, obj[attr], obj[attr]._dirty) # ####################
       else if attr in obj._dirty
         for dct in ret
           if obj instanceof InLine
             comp = baseParent
-            baseDirty.push(prefix + '.' + attr)
+            baseDirty.push(prefix + '.' + attr) # es posible usar baseParent._dirty?
           else
             comp = obj
           if _.isEqual(dct.object, comp)

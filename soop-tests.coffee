@@ -272,6 +272,7 @@ describe 'suite basics', ->
     x2 = X.findOne(x._id)
     test.equal x2.x.y.z, 'world'
 
+
   it 'test XY[Z]', (test)->
     x = new X
       x: new Y
@@ -286,16 +287,40 @@ describe 'suite basics', ->
     x2 = X.findOne(x._id)
     test.equal x2.x.y2[0].z, 'world'
 
-  it.skip 'test XY[number]', (test)->
+  it 'test XY[number]', (test)->
     x = new X
       x: new Y
         y3: [1]
 
     soop.properties(x)
     x.save()
-    x.x.y3[0] = 3
+    x.x.y3.set(0,  3)
     x.save()
 
     x2 = X.findOne(x._id)
     test.equal x2.x.y3[0], 3
 
+  it 'test XYy3[number]', (test)->
+    x = new X
+      x: new Y
+        y3: [1]
+
+    soop.properties(x)
+    x.save()
+    x.x.prop_y3 = [1,3]
+    x.save()
+    x2 = X.findOne(x._id)
+    test.equal x2.x.y3, [1,3]
+
+  it 'test XYy3[number]b', (test)->
+    x = new X
+      x: new Y
+        y3: [1]
+
+    soop.properties(x)
+    x.save()
+    x.prop_x = new Y
+      y3: [2,5]
+    x.save()
+    x2 = X.findOne(x._id)
+    test.equal x2.x.y3, [2,5]
