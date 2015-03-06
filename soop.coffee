@@ -192,7 +192,7 @@ class Base
       @_propertyCreated = true
 
   isValid : ->
-    _.all( (x.v for x in soop.validate(@, @constructor.schema ) ))
+    _.all( (x.v for x in validate(@, @constructor.schema ) ))
 
   _save: (doc) ->
     #if doc._id is undefined
@@ -240,7 +240,7 @@ class InLine
       @_propertyCreated = true
 
   isValid : ->
-    _.all( (x.v for x in soop.validate(@, @constructor.schema ) ))
+    _.all( (x.v for x in validate(@, @constructor.schema ) ))
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -314,8 +314,8 @@ getMongoSet = (obj) ->
 
 soop = {}
 soop.Base  = Base
-soop.properties = properties
+#soop.properties = properties
 soop.InLine = InLine
 soop.validate = validate
-soop.getMongoSet = getMongoSet
+#soop.getMongoSet = getMongoSet
 soop.array = array
