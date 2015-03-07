@@ -5,6 +5,7 @@ y = new Mongo.Collection 'TestY'
 x_collection = x
 a_collection = a
 c_collection = c
+y_collection = y
 
 class C extends soop.Base
   @collection: c
@@ -153,6 +154,8 @@ describe 'suite basics', ->
 
     a1.save()
     a2 = A.findOne(a1._id)
+    console.log a1
+    console.log a2
     test.equal a1, a2
 
   it 'test save+findOne A+C', (test)->
@@ -262,8 +265,10 @@ describe 'suite basics', ->
     a1.a2.c = 'mundo'
     a1.a3.b = 'hola'
     a1.a3.b3[0].c = 'nintendo'
+
     a1.save()
 
+    console.log a_collection.findOne(a1._id)
     a2 = A.findOne(a1._id)
 
     test.equal a2.a, 7
@@ -274,6 +279,7 @@ describe 'suite basics', ->
 
 
   it 'test XYZ', (test)->
+
     x = new X
       x: new Y
         y: new Z
@@ -310,6 +316,7 @@ describe 'suite basics', ->
 
     #soop.properties(x)
     x.save()
+
     x.x.y3.set(0,  3)
     x.save()
 
@@ -330,7 +337,6 @@ describe 'suite basics', ->
     test.equal x2.x.y3, [1,5]
 
   it 'test XYy3[number]b', (test)->
-    console.log '1) =============================================='
     x = new X
       x: new Y
         y3: [1]
@@ -339,13 +345,14 @@ describe 'suite basics', ->
     x.save()
     x.x = new Y
       y3: [2,5]
-    console.log x.x.y3
+
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x.y3, [2,5]
-    console.log '2) =============================================='
+
 
   it 'test XYy3[number]undfined', (test)->
+    console.log '===================================================================================='
     x = new X
       x: new Y
         y3: [1]
@@ -358,6 +365,7 @@ describe 'suite basics', ->
     test.equal x2.x, undefined
     #x3 = x_collection.findOne(x._id)
     #test.equal x3.x, undefined
+console.log '===================================================================================='
 
 describe 'suite update', ->
   beforeEach (test)->
