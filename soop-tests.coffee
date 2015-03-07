@@ -248,7 +248,6 @@ describe 'suite basics', ->
     #test.isTrue _.isString(doc.a3.b5[0][0])  # fail in the server travis; test again
 
   it 'test properties', (test)->
-    console.log '================================================='
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -276,7 +275,6 @@ describe 'suite basics', ->
 
 
   it 'test XYZ', (test)->
-    console.log '================================================='
     x = new X
       x: new Y
         y: new Z

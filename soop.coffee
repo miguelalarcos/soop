@@ -1,3 +1,5 @@
+exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__']
+
 array = (v) ->
   v.set = setterArray(v)
   #v._setted = true
@@ -59,7 +61,7 @@ validate = (obj, schema) ->
     else
       obj2[key] = obj[key]
   for key, value of obj2
-    if _.isFunction(value) or key == '_id' or key == '_dirty' or key == '_propertyCreated'
+    if _.isFunction(value) or key in exclude #== '_id' or key == '_dirty' or key == '_propertyCreated'
       continue
     if value instanceof Base or value instanceof InLine
       r = validate(value, schema[key].type.schema)
@@ -96,40 +98,33 @@ save_array = (array, schema)->
       toBDD.push v
   return [ret, toBDD]
 
-clone = (obj, klass) ->
+cloneAndFilter = (obj) -> #, klass) ->
 
   if _.isArray(obj)
     ret = []
     for v in obj
-      ret.push clone(v)
+      ret.push cloneAndFilter(v)
   else if _.isObject(obj)
     ret = {}
     for k,v of obj
       if _.isFunction(v) # or not /^_/.test(k)
         continue
-      ret[k] = filter(clone(v))
-      #if klass
-      #  ret[k] = new klass(clone(v), true)
-        #console.log 'flag'
-      #  ret[k] = filter(clone(v))
-      #else
-      #  ret[k] = clone(v)
+      ret[k] = filter(cloneAndFilter(v))
   else
     return obj
   return ret
 
 filter = (obj) ->
-  if not _.isObject(obj) or _.isArray(obj)
+  if not _.isObject(obj)
     return obj
-  for attr in ['_propertyCreated', '_super__'] #, '_dirty']
-    delete obj[attr]
+  #for attr in  ['_propertyCreated', '_super__']
+  #    delete obj[attr]
   for attr, value of obj
     if _.isFunction(value)
       delete obj[attr]
       continue
 
-    if /^_/.test(attr) and attr != '_id' and attr != '_dirty' and attr != '_klass'
-    # if attr != '_id' and attr != '_dirty'
+    if /^_/.test(attr) and attr not in exclude # != '_id' and attr != '_dirty' and attr != '_klass'
       obj[attr[1..]] = obj[attr]
       delete obj[attr]
   return obj
@@ -139,7 +134,8 @@ save = (obj, schema)->
   toBDD = {}
 
   for key, value of obj
-    if not _.isFunction(value) and key != '_id' and key != '_dirty' and key != '_propertyCreated' and /^_/.test(key)
+    #if not _.isFunction(value) and key != '_id' and key != '_dirty' and key != '_propertyCreated' and /^_/.test(key)
+    if not _.isFunction(value) and key not in exclude and /^_/.test(key)
       key = key[1..]
       if _.isArray(value)
         [ret[key], toBDD[key]] = save_array(value, schema[key].type)
@@ -155,10 +151,9 @@ save = (obj, schema)->
         ret[key] = value
         toBDD[key] = value
 
-  #toBDD = cloneAndFilter(obj.constructor, toBDD)
-  toBDD = clone(toBDD, obj.constructor)
+  toBDD = cloneAndFilter(toBDD)
   toBDD._dirty = obj._dirty
-  toBDD.constructor = obj.constructor
+  toBDD.constructor = obj.constructor # refactorizar a toBDD._collection
   if obj instanceof Base
     toBDD._klass = 'Base'
   else if obj instanceof InLine
@@ -197,7 +192,7 @@ create = (obj, schema)->
 
   ret = {}
   for key, value of obj
-    if _.isFunction(value) or key == '_id' or key == '_dirty' or key == '_propertyCreated' or key == '_super__'
+    if _.isFunction(value) or key in exclude # == '_id' or key == '_dirty' or key == '_propertyCreated' or key == '_super__'
       continue
     if /^_/.test(key)
       key_ = key[1..]
@@ -264,7 +259,7 @@ class Base
         for pv in elem.paths
           if pv.value is undefined
             unset[pv.path[1..]] = ''
-          else if pv.path != '_id' and pv.path != '_dirty' and pv.path != '_propertyCreated'
+          else if pv.path not in exclude # != '_id' and pv.path != '_dirty' and pv.path != '_propertyCreated'
             doc[pv.path[1..]] = pv.value
 
         if elem.object.constructor.collection and (not _.isEmpty(doc) or not _.isEmpty(unset))
@@ -284,7 +279,7 @@ class InLine
     #@_dirty = []
     schema = @constructor.schema
     for key, value of args
-      if key == '_dirty' or key == '_klass'
+      if key in exclude # == '_dirty' or key == '_klass'
         continue
       klass = schema[key].type
       if _.isArray(value)
@@ -336,7 +331,6 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       ret.push {object: baseParent, paths: out}
       for v,i in obj
         if v._klass == 'Base' or v._klass == 'InLine'
-          console.log 'entro', v, prefix + '.' + i
           ret.push { object: v, paths: [] }
           _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
         else
@@ -346,7 +340,7 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
     if obj is undefined
       return
     for attr, value of obj
-      if _.isFunction(value) or attr == '_id' or attr == '_dirty' or attr == '_propertyCreated' or attr == '_klass'
+      if _.isFunction(value) or attr in exclude # == '_id' or attr == '_dirty' or attr == '_propertyCreated' or attr == '_klass'
         continue
       if _.isArray(value)
         _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
@@ -378,8 +372,6 @@ getMongoSet = (obj, dirty) ->
 
 soop = {}
 soop.Base  = Base
-#soop.properties = properties
 soop.InLine = InLine
 soop.validate = validate
-#soop.getMongoSet = getMongoSet
 soop.array = array
