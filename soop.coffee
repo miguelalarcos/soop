@@ -256,7 +256,6 @@ class Base
       @_dirty = []
     else
       out = getMongoSet(doc, dirty) # @
-      console.log out
       for elem in out
         #if elem.object._dirty.length == 0
         #  continue
@@ -269,8 +268,6 @@ class Base
             doc[pv.path[1..]] = pv.value
 
         if elem.object.constructor.collection and (not _.isEmpty(doc) or not _.isEmpty(unset))
-          console.log '$set', doc
-          console.log '$unset', unset
           elem.object.constructor.collection.update(elem.object._id, {$set: doc, $unset: unset})
           elem.object._dirty = []
           @_dirty = []
@@ -338,8 +335,8 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       out = []
       ret.push {object: baseParent, paths: out}
       for v,i in obj
-        if v instanceof Base or v instanceof InLine   # #################### ojo a esto
-        #if v._klass == 'Base' or v._klass = 'InLine' # ##############################
+        if v._klass == 'Base' or v._klass == 'InLine'
+          console.log 'entro', v, prefix + '.' + i
           ret.push { object: v, paths: [] }
           _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
         else

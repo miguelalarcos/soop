@@ -154,8 +154,6 @@ describe 'suite basics', ->
 
     a1.save()
     a2 = A.findOne(a1._id)
-    console.log a1
-    console.log a2
     test.equal a1, a2
 
   it 'test save+findOne A+C', (test)->
@@ -250,7 +248,7 @@ describe 'suite basics', ->
     #test.isTrue _.isString(doc.a3.b5[0][0])  # fail in the server travis; test again
 
   it 'test properties', (test)->
-
+    console.log '================================================='
     a1 = new A
       a: 'hello world'
       a2: new C
@@ -268,7 +266,6 @@ describe 'suite basics', ->
 
     a1.save()
 
-    console.log a_collection.findOne(a1._id)
     a2 = A.findOne(a1._id)
 
     test.equal a2.a, 7
@@ -279,7 +276,7 @@ describe 'suite basics', ->
 
 
   it 'test XYZ', (test)->
-
+    console.log '================================================='
     x = new X
       x: new Y
         y: new Z
@@ -352,7 +349,6 @@ describe 'suite basics', ->
 
 
   it 'test XYy3[number]undfined', (test)->
-    console.log '===================================================================================='
     x = new X
       x: new Y
         y3: [1]
@@ -365,7 +361,6 @@ describe 'suite basics', ->
     test.equal x2.x, undefined
     #x3 = x_collection.findOne(x._id)
     #test.equal x3.x, undefined
-console.log '===================================================================================='
 
 describe 'suite update', ->
   beforeEach (test)->
