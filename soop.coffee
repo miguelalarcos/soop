@@ -168,7 +168,6 @@ save = (obj, schema)->
       for attr in exclude
         delete toBDD[attr]
       docToInsert = cloneWithFilter(toBDD, advancedFilter)
-      console.log docToInsert
       obj._id = obj.constructor.collection.insert(docToInsert)
       obj._dirty = []
     else

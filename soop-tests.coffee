@@ -338,7 +338,7 @@ describe 'suite basics', ->
     test.equal x2.x.y3, [2,5]
 
 
-  it 'test XYy3[number]undfined', (test)->
+  it 'test XYy3[number]undefined', (test)->
     x = new X
       x: new Y
         y3: [1]
@@ -424,6 +424,27 @@ describe 'suite insert', ->
     expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
     expect(spies.insert_C).to.have.been.calledWith({c: "amstrad"})
     expect(spies.insert_A).to.have.been.calledWith({a: "hello world", a2: a1.a2._id, a3: {b: "game over!", b2: a1.a3.b2._id, b3: [ a1.a3.b3[0]._id ]}})
+
+  it 'test save+findOne A+C+B+C+[[C]]', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+        b5: [[new C c:'atari']]
+
+    a1.save()
+    doc =
+      a : "hello world"
+      a2: a1.a2._id
+      a3:
+        b: "game over!"
+        b2: a1.a3.b2._id
+        b5: [[ a1.a3.b5[0][0]._id ]]
+    expect(spies.insert_A).to.have.been.calledWith(doc)
 
 describe 'suite update', ->
   beforeEach (test)->
