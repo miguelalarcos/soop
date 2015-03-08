@@ -70,9 +70,8 @@ describe 'suite basics', ->
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
-    #test.isFalse soop.isValid(a1)
     test.isFalse a1.isValid()
-    #test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
+    test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -133,7 +132,7 @@ describe 'suite basics', ->
         c: 'insert coin'
 
     a1.save()
-    #test.isNotNull(a1.a2._id)
+    test.isNotNull(a1.a2._id)
     test.notEqual undefined, a1.a2._id
 
   it 'test save A+B+C', (test)->
@@ -145,7 +144,7 @@ describe 'suite basics', ->
           c: 'amstrad'
 
     a1.save()
-    #test.isNotNull(a1.a3.b2._id)
+    test.isNotNull(a1.a3.b2._id)
     test.notEqual undefined, a1.a3.b2._id
 
   it 'test save+findOne A', (test)->
@@ -203,9 +202,8 @@ describe 'suite basics', ->
         b4: [1,2,3,4,5]
         b5: [[new C c:'atari']]
 
-    #test.isTrue soop.isValid(a1)
     test.isTrue a1.isValid()
-    #test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
+    test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
 
   it 'test types A+C+B+C+[C]', (test)->
     a1 = new A
@@ -256,7 +254,6 @@ describe 'suite basics', ->
         b: 'game over!'
         b3: [new C c:'atari']
 
-    #soop.properties(a1)
     a1.save()
     a1.a = 7
     a1.a2.c = 'mundo'
@@ -280,7 +277,6 @@ describe 'suite basics', ->
         y: new Z
           z: 'hello'
 
-    #soop.properties(x)
     x.save()
     x.x.y.z = 'world'
     x.save()
@@ -295,7 +291,6 @@ describe 'suite basics', ->
         y2: [new Z
           z: 'hello']
 
-    #soop.properties(x)
     x.save()
     x.x.y2[0].z = 'world'
 
@@ -309,7 +304,6 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    #soop.properties(x)
     x.save()
 
     x.x.y3.set(0,  3)
@@ -323,7 +317,6 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    #soop.properties(x)
     x.save()
     x.x.y3 = soop.array([1,3])
     x.x.y3.set(1, 5)
@@ -336,7 +329,6 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    #soop.properties(x)
     x.save()
     x.x = new Y
       y3: [2,5]
@@ -351,14 +343,13 @@ describe 'suite basics', ->
       x: new Y
         y3: [1]
 
-    #soop.properties(x)
     x.save()
     x.x = undefined
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x, undefined
-    #x3 = x_collection.findOne(x._id)
-    #test.equal x3.x, undefined
+    x3 = x_collection.findOne(x._id)
+    test.equal x3.x, undefined
 
 describe 'suite update', ->
   beforeEach (test)->
@@ -394,8 +385,10 @@ describe 'suite update', ->
 
     a1.a2.c = undefined
     a1.a3 = new B
-      b: 'amstrad'
+      b: 'atari'
+
     a1.save()
 
     expect(spies.update_C).to.have.been.calledWith(a1.a2._id, {$set:{}, $unset:{c: ''}})
-    #expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b:'amstrad'}}, $unset: {}})
+    expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b:'atari'}}, $unset: {}})
+
