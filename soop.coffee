@@ -2,11 +2,7 @@ exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__', 'construct
 
 array = (v) ->
   v.set = setterArray(v)
-  #v._setted = true
   return v
-
-#isValid = (obj) ->
-#  _.all( (x.v for x in soop.validate(obj, obj.constructor.schema ) ))
 
 _validate = (x, klass)->
   if x is undefined and klass.optional == true
@@ -61,7 +57,7 @@ validate = (obj, schema) ->
     else
       obj2[key] = obj[key]
   for key, value of obj2
-    if _.isFunction(value) or key in exclude #== '_id' or key == '_dirty' or key == '_propertyCreated'
+    if _.isFunction(value) or key in exclude
       continue
     if value instanceof Base or value instanceof InLine
       r = validate(value, schema[key].type.schema)
@@ -98,7 +94,7 @@ save_array = (array, schema)->
       toBDD.push v
   return [ret, toBDD]
 
-cloneAndFilter = (obj) -> #, klass) ->
+cloneAndFilter = (obj) ->
 
   if _.isArray(obj)
     ret = []
@@ -107,7 +103,7 @@ cloneAndFilter = (obj) -> #, klass) ->
   else if _.isObject(obj)
     ret = {}
     for k,v of obj
-      if _.isFunction(v) # or not /^_/.test(k)
+      if _.isFunction(v)
         continue
       ret[k] = filter(cloneAndFilter(v))
   else
@@ -117,14 +113,13 @@ cloneAndFilter = (obj) -> #, klass) ->
 filter = (obj) ->
   if not _.isObject(obj)
     return obj
-  #for attr in  ['_propertyCreated', '_super__']
-  #    delete obj[attr]
+
   for attr, value of obj
     if _.isFunction(value)
       delete obj[attr]
       continue
 
-    if /^_/.test(attr) and attr not in exclude # != '_id' and attr != '_dirty' and attr != '_klass'
+    if /^_/.test(attr) and attr not in exclude
       obj[attr[1..]] = obj[attr]
       delete obj[attr]
   return obj
@@ -134,7 +129,6 @@ save = (obj, schema)->
   toBDD = {}
 
   for key, value of obj
-    #if not _.isFunction(value) and key != '_id' and key != '_dirty' and key != '_propertyCreated' and /^_/.test(key)
     if not _.isFunction(value) and key not in exclude and /^_/.test(key)
       key = key[1..]
       if _.isArray(value)
@@ -162,7 +156,27 @@ save = (obj, schema)->
     toBDD._id = obj._id
 
   if obj instanceof Base
-    obj._save(toBDD, (x[1..] for x in obj._dirty) )
+    dirty = (x[1..] for x in obj._dirty)
+    if obj._id is undefined
+      for attr in exclude
+        delete toBDD[attr]
+      obj._id = obj.constructor.collection.insert(toBDD)
+      obj._dirty = []
+    else
+      out = getMongoSet(toBDD, dirty)
+      for elem in out
+        set = {}
+        unset = {}
+        for pv in elem.paths
+          if pv.value is undefined
+            unset[pv.path[1..]] = ''
+          else if pv.path not in exclude
+            set[pv.path[1..]] = pv.value
+
+        if elem.object.constructor.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
+          elem.object.constructor.collection.update(elem.object._id, {$set: set, $unset: unset})
+          elem.object._dirty = []
+    #
     ret._id = obj._id
   return [ret, toBDD]
 
@@ -180,8 +194,6 @@ createArray = (value, schema)->
         ret.push new klass(v) # sera necesario llamar a create??
       else
         ret.push v
-        #doc = create(v, klass) # #####################################################
-        #ret.push new klass(doc) # #####################################################
 
   return ret
 
@@ -192,7 +204,7 @@ create = (obj, schema)->
 
   ret = {}
   for key, value of obj
-    if _.isFunction(value) or key in exclude # == '_id' or key == '_dirty' or key == '_propertyCreated' or key == '_super__'
+    if _.isFunction(value) or key in exclude
       continue
     if /^_/.test(key)
       key_ = key[1..]
@@ -213,7 +225,6 @@ create = (obj, schema)->
 class Base
   constructor: (args, noProperties, doFindOne)->
 
-    #@_dirty = []
     doFindOne = doFindOne or true
     args = args or {}
 
@@ -243,29 +254,6 @@ class Base
   isValid : ->
     _.all( (x.v for x in validate(@, @constructor.schema ) ))
 
-  _save: (doc, dirty) ->
-
-    if @_id is undefined
-      for attr in exclude
-        delete doc[attr]
-      @_id = @constructor.collection.insert(doc)
-      @_dirty = []
-    else
-      out = getMongoSet(doc, dirty) # @
-      for elem in out
-        doc = {}
-        unset = {}
-        for pv in elem.paths
-          if pv.value is undefined
-            unset[pv.path[1..]] = ''
-          else if pv.path not in exclude # != '_id' and pv.path != '_dirty' and pv.path != '_propertyCreated'
-            doc[pv.path[1..]] = pv.value
-
-        if elem.object.constructor.collection and (not _.isEmpty(doc) or not _.isEmpty(unset))
-          elem.object.constructor.collection.update(elem.object._id, {$set: doc, $unset: unset})
-          elem.object._dirty = []
-          @_dirty = []
-
   save: ->
     save(@, @constructor.schema)
 
@@ -277,7 +265,7 @@ class InLine
 
     schema = @constructor.schema
     for key, value of args
-      if key in exclude # == '_dirty' or key == '_klass'
+      if key in exclude
         continue
       klass = schema[key].type
       if _.isArray(value)
@@ -291,18 +279,10 @@ class InLine
       properties(@)
       @_propertyCreated = true
     @_klass = 'InLine'
-    #@_dirty = ('_'+k for k in _.keys(schema))
     @_dirty = []
 
   isValid : ->
     _.all( (x.v for x in validate(@, @constructor.schema ) ))
-
-#clearDescendatDirties = (obj) ->
-#  for k, v of obj
-#    if v instanceof Base or v instanceof InLine
-#      v._dirty = []
-#      clearDescendatDirties(v)
-
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -310,7 +290,6 @@ getter_setter = (obj, attr) ->
     obj[attr] = value
     if attr not in obj._dirty
       obj._dirty.push attr
-    #clearDescendatDirties(value)
 
 setterArray = (array) ->
   (index, value) ->
@@ -345,7 +324,7 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
     if obj is undefined
       return
     for attr, value of obj
-      if _.isFunction(value) or attr in exclude # == '_id' or attr == '_dirty' or attr == '_propertyCreated' or attr == '_klass'
+      if _.isFunction(value) or attr in exclude
         continue
       if _.isArray(value)
         _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
@@ -357,7 +336,7 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           else
             comp = obj
           if _.isEqual(dct.object, comp)
-            dct.paths.push {path: prefix + '.' +attr, value: obj[attr]} # comp
+            dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
             break
       if value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')
         if value._klass == 'InLine'

@@ -392,7 +392,6 @@ describe 'suite update', ->
     a1.save()
 
   it 'test update call overwrite', (test)->
-    console.log '#######################################################################'
     a1 = new A
       a: 'hello world'
       a3: new B
@@ -408,8 +407,6 @@ describe 'suite update', ->
         c: 'sega'
 
     a1.a3.b2.c = 'nintendo'
-
-
     a1.save()
 
     expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b2: a1.a3.b2._id}}, $unset: {}})
@@ -417,7 +414,6 @@ describe 'suite update', ->
 
 
   it 'test update call 2', (test)->
-    console.log '#######################################################################'
     a1 = new A
       a: 'hello world'
       a2: new C
