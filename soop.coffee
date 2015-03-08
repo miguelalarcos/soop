@@ -1,4 +1,4 @@
-exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__']
+exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__', 'constructor']
 
 array = (v) ->
   v.set = setterArray(v)
@@ -199,9 +199,7 @@ create = (obj, schema)->
     else
       key_ = key
     if key_ not in _.keys(schema)
-      #console.log 'continue para key', key
       continue
-    #console.log 'en create, schema', schema, key_
     if _.isArray(value)
       ret['_'+key_] = createArray(value, schema[key_])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
@@ -248,13 +246,13 @@ class Base
   _save: (doc, dirty) ->
 
     if @_id is undefined
+      for attr in exclude
+        delete doc[attr]
       @_id = @constructor.collection.insert(doc)
       @_dirty = []
     else
       out = getMongoSet(doc, dirty) # @
       for elem in out
-        #if elem.object._dirty.length == 0
-        #  continue
         doc = {}
         unset = {}
         for pv in elem.paths
@@ -263,8 +261,6 @@ class Base
           else if pv.path not in exclude # != '_id' and pv.path != '_dirty' and pv.path != '_propertyCreated'
             doc[pv.path[1..]] = pv.value
 
-        #console.log '$set', doc
-        #console.log '$unset', unset
         if elem.object.constructor.collection and (not _.isEmpty(doc) or not _.isEmpty(unset))
           elem.object.constructor.collection.update(elem.object._id, {$set: doc, $unset: unset})
           elem.object._dirty = []
@@ -279,20 +275,16 @@ class Base
 class InLine
   constructor: (args, noProperties)->
 
-    #@_dirty = []
     schema = @constructor.schema
     for key, value of args
       if key in exclude # == '_dirty' or key == '_klass'
         continue
       klass = schema[key].type
       if _.isArray(value)
-
         @['_'+key] = createArray value, klass
       else if klass.prototype instanceof InLine or klass.prototype instanceof Base
-
         @['_'+key] = new klass value
       else
-
         @['_'+key] = value
 
     if not noProperties and not @_propertyCreated
@@ -305,12 +297,20 @@ class InLine
   isValid : ->
     _.all( (x.v for x in validate(@, @constructor.schema ) ))
 
+#clearDescendatDirties = (obj) ->
+#  for k, v of obj
+#    if v instanceof Base or v instanceof InLine
+#      v._dirty = []
+#      clearDescendatDirties(v)
+
+
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
   set: (value) ->
     obj[attr] = value
     if attr not in obj._dirty
       obj._dirty.push attr
+    #clearDescendatDirties(value)
 
 setterArray = (array) ->
   (index, value) ->
@@ -328,45 +328,6 @@ properties = (obj) ->
     else
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
 
-
-x_getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar baseParent._dirty?
-  if _.isArray(obj)
-    if obj.length > 0
-      out = []
-      ret.push {object: baseParent, paths: out}
-      for v,i in obj
-        if v._klass == 'Base' or v._klass == 'InLine'
-          ret.push { object: v, paths: [] }
-          _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
-        else
-          out.push {path: prefix + '.' + i, value: v}
-          baseDirty.push(prefix + '.' + i)
-  else
-    if obj is undefined
-      return
-    for attr, value of obj
-      if _.isFunction(value) or attr in exclude # == '_id' or attr == '_dirty' or attr == '_propertyCreated' or attr == '_klass'
-        continue
-      if _.isArray(value)
-        _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
-      else if '_'+attr not in obj._dirty and value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')
-        if value._klass == 'InLine'
-          ret.push { object: baseParent, paths: [] }
-          _getMongoSet(prefix + '.' + attr, value, ret, baseParent, baseDirty)
-        else
-          ret.push { object: obj, paths: [{path: prefix + '.' + attr, value: value}] }
-      else if '_'+attr in obj._dirty #
-        for dct in ret
-          #if obj instanceof InLine
-          if obj._klass == 'InLine'
-            comp = baseParent
-            baseDirty.push(prefix + '.' + attr)
-          else
-            comp = obj
-          if _.isEqual(dct.object, comp)
-            dct.paths.push {path: prefix + '.' +attr, value: obj[attr]} # comp
-            break
-  #delete obj._dirty
 
 _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar baseParent._dirty?
   if _.isArray(obj)
@@ -396,8 +357,6 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           else
             comp = obj
           if _.isEqual(dct.object, comp)
-            #delete obj[attr]._klass
-            #delete obj[attr]._dirty
             dct.paths.push {path: prefix + '.' +attr, value: obj[attr]} # comp
             break
       if value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')

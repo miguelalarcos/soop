@@ -356,11 +356,13 @@ describe 'suite update', ->
     Meteor.call 'delete'
     spies.create('update_A', a_collection, 'update')
     spies.create('update_C', c_collection, 'update')
+    spies.create('insert_C', c_collection, 'insert')
 
   afterEach (test) ->
     Meteor.call 'delete'
     spies.restore('update_A')
     spies.restore('update_C')
+    spies.restore('insert_C')
 
   it 'test update call basic', (test)->
     a1 = new A
@@ -389,6 +391,59 @@ describe 'suite update', ->
 
     a1.save()
 
-    expect(spies.update_C).to.have.been.calledWith(a1.a2._id, {$set:{}, $unset:{c: ''}})
-    expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b:'atari'}}, $unset: {}})
+  it 'test update call overwrite', (test)->
+    console.log '#######################################################################'
+    a1 = new A
+      a: 'hello world'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
 
+    a1.save()
+
+    a1.a3.b2.c = 'atari'
+    a1.a3 = new B
+      b2: new C
+        c: 'sega'
+
+    a1.a3.b2.c = 'nintendo'
+
+
+    a1.save()
+
+    expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{a3: {b2: a1.a3.b2._id}}, $unset: {}})
+    expect(spies.insert_C).to.have.been.calledWith({c: 'nintendo'})
+
+
+  it 'test update call 2', (test)->
+    console.log '#######################################################################'
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+
+    a1.save()
+    a1.a3.b2.c = 'atari'
+    a1.save()
+    expect(spies.update_C).to.have.been.calledWith(a1.a3.b2._id, {$set:{c:'atari'}, $unset: {}})
+
+  it 'test update call 3', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+
+    a1.save()
+    a1.a3.b2 = new C
+      c: 'atari'
+    a1.save()
+    expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{'a3.b2': a1.a3.b2._id}, $unset: {}})
