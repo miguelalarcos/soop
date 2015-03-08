@@ -80,7 +80,7 @@ save_array = (array, schema)->
     if _.isArray(v)
       [docs, docs2] = save_array(v, schema[0])
       ret.push docs
-      toBDD.push docs2 # ### cloneAndFilter???
+      toBDD.push docs2
     else if _.isObject(v) and not (v instanceof Base)
       [doc, doc2 ]= save(v, schema[0])
       ret.push doc
@@ -94,28 +94,27 @@ save_array = (array, schema)->
       toBDD.push v
   return [ret, toBDD]
 
-cloneAndFilter = (obj) ->
-
+cloneWithFilter = (obj, filter) ->
   if _.isArray(obj)
     ret = []
     for v in obj
-      ret.push cloneAndFilter(v)
+      ret.push cloneWithFilter(v, filter)
   else if _.isObject(obj)
     ret = {}
     for k,v of obj
       if _.isFunction(v)
         continue
-      ret[k] = filter(cloneAndFilter(v))
+      ret[k] = filter(cloneWithFilter(v, filter))
   else
     return obj
   return ret
 
-filter = (obj) ->
+_filter = (obj, advanced) ->
   if not _.isObject(obj)
     return obj
 
   for attr, value of obj
-    if _.isFunction(value)
+    if _.isFunction(value) or (advanced and attr in exclude)
       delete obj[attr]
       continue
 
@@ -123,6 +122,13 @@ filter = (obj) ->
       obj[attr[1..]] = obj[attr]
       delete obj[attr]
   return obj
+
+basicFilter = (obj) ->
+  return _filter(obj, false)
+
+advancedFilter = (obj) ->
+  return _filter(obj, true)
+
 
 save = (obj, schema)->
   ret = {}
@@ -145,7 +151,8 @@ save = (obj, schema)->
         ret[key] = value
         toBDD[key] = value
 
-  toBDD = cloneAndFilter(toBDD)
+  toBDD = cloneWithFilter(toBDD, basicFilter)
+
   toBDD._dirty = obj._dirty
   toBDD.constructor = obj.constructor # refactorizar a toBDD._collection
   if obj instanceof Base
@@ -160,7 +167,9 @@ save = (obj, schema)->
     if obj._id is undefined
       for attr in exclude
         delete toBDD[attr]
-      obj._id = obj.constructor.collection.insert(toBDD)
+      docToInsert = cloneWithFilter(toBDD, advancedFilter)
+      console.log docToInsert
+      obj._id = obj.constructor.collection.insert(docToInsert)
       obj._dirty = []
     else
       out = getMongoSet(toBDD, dirty)

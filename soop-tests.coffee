@@ -351,6 +351,80 @@ describe 'suite basics', ->
     x3 = x_collection.findOne(x._id)
     test.equal x3.x, undefined
 
+describe 'suite insert', ->
+  beforeEach (test)->
+    Meteor.call 'delete'
+    spies.create('insert_A', a_collection, 'insert')
+    spies.create('insert_C', c_collection, 'insert')
+
+  afterEach (test) ->
+    Meteor.call 'delete'
+    spies.restore('insert_A')
+    spies.restore('insert_C')
+
+  it 'test insert call basic', (test)->
+    a1 = new A
+      a: 'hello world'
+
+    a1.save()
+    expect(spies.insert_A).to.have.been.calledWith({a: "hello world"})
+
+  it 'test insert A+C', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+
+    a1.save()
+    expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
+    expect(spies.insert_A).to.have.been.calledWith({a: "hello world", a2: a1.a2._id})
+
+  it 'test insert A+C+B+C', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+
+    a1.save()
+
+    expect(spies.insert_C).to.have.been.calledWith({c: "amstrad"})
+    expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
+    expect(spies.insert_A).to.have.been.calledWith({a: "hello world", a2: a1.a2._id, a3: {b: "game over!", b2: a1.a3.b2._id}})
+
+
+  it 'test insert A+C+B', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+
+    a1.save()
+    expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
+    expect(spies.insert_A).to.have.been.calledWith({a: "hello world", a2: a1.a2._id, a3: {b: "game over!"}})
+
+
+  it 'test insert A+C+B+C+[C]', (test)->
+    a1 = new A
+      a: 'hello world'
+      a2: new C
+        c: 'insert coin'
+      a3: new B
+        b: 'game over!'
+        b2: new C
+          c: 'amstrad'
+        b3: soop.array([new C c:'atari'])
+
+    a1.save()
+    expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
+    expect(spies.insert_C).to.have.been.calledWith({c: "amstrad"})
+    expect(spies.insert_A).to.have.been.calledWith({a: "hello world", a2: a1.a2._id, a3: {b: "game over!", b2: a1.a3.b2._id, b3: [ a1.a3.b3[0]._id ]}})
+
 describe 'suite update', ->
   beforeEach (test)->
     Meteor.call 'delete'
