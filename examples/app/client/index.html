@@ -3,7 +3,12 @@
     {{#each data}}
         <div>
             {{#each this.a}}
-                {{this.b}}
+                {{this.b}}:
+                <div>
+                    {{#each this.b2}}
+                        {{this.c}}
+                    {{/each}}
+                </div>
             {{/each}}
         </div>
     {{/each}}

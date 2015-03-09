@@ -84,7 +84,8 @@ save_array = (array, schema)->
       ret.push docs
       toBDD.push docs2
     else if _.isObject(v) and not (v instanceof Base)
-      [doc, doc2 ]= save(v, schema[0])
+      [doc, doc2 ]= save(v, schema[0].schema)
+      #[doc, doc2 ]= save(v, schema[0])  !!!!!!!!!!!!!!!1
       ret.push doc
       toBDD.push doc2
     else if v instanceof Base
@@ -187,18 +188,17 @@ createArray = (value, schema)->
     if _.isArray(v)
       ret.push createArray(v, schema[0])
     else
-      klass = schema[0] or schema
+      #klass = schema[0] or schema   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      klass = schema[0] or schema.type[0]
       if _.isString(v) and klass.prototype instanceof Base
         ret.push new klass({_id: v})
       else if klass.prototype instanceof Base or klass.prototype instanceof InLine
         ret.push new klass(v) # sera necesario llamar a create??
       else
         ret.push v
-
   return ret
 
 create = (obj, schema)->
-
   if _.isString(obj)
     return new (schema)({_id: obj})
 
@@ -265,7 +265,9 @@ class InLine
 
     schema = @constructor.schema
     for key, value of args
-      if key in exclude
+      #if key in exclude  # !!!!!!!!!!!!!!!!!!
+      if /^_/.test(key) then key = key[1..]
+      if (key in exclude) or (key not in _.keys(schema))
         continue
       klass = schema[key].type
       if _.isArray(value)
@@ -376,7 +378,13 @@ children = (schema) ->
   for key, value of schema
     if key in ['collection', 'findOne', '__super__']
       continue
-    sch = value.type[0] or value.type # chekear toda profundiad posible de array
+    value = value.type
+    while value[0]
+      value = value[0]
+
+    sch = value
+    console.log sch
+    console.log sch.prototype instanceof Base, sch.prototype instanceof InLine
     if sch.prototype instanceof Base
       collection = sch.collection
       sch = sch.schema
@@ -386,6 +394,9 @@ children = (schema) ->
           dct[key] = x._id
           collection.find(dct)
         children: children(sch)
+      console.log 'ret.push', dct, collection
+    else
+      children
   return ret
 
 
