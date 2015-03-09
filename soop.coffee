@@ -1,8 +1,8 @@
 exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__', 'constructor']
 
-#array = (v) ->
-#  v.set = setterArray(v)
-#  return v
+array = (v) ->
+  v.set = setterArray(v)
+  return v
 
 elementValidate = (k, x, klass, optional)->
   if x is undefined and optional == true
@@ -77,6 +77,7 @@ validate = (obj) ->
 save_array = (array, schema)->
   ret = []
   toBDD = []
+  toBDD._dirty = array._dirty
   for v in array
     if _.isArray(v)
       [docs, docs2] = save_array(v, schema[0])
@@ -97,6 +98,7 @@ save_array = (array, schema)->
 
 
 cloneWithFilter = (obj, filter) ->
+  filter(obj)
   if _.isArray(obj)
     ret = []
     for v in obj
@@ -290,8 +292,11 @@ getter_setter = (obj, attr) ->
       obj._dirty.push attr
 
 setterArray = (array) ->
+  array._dirty = []
   (index, value) ->
     array[index] = value
+    if index not in array._dirty
+      array._dirty.push index
 
 properties = (obj) ->
   if obj is undefined
@@ -313,11 +318,14 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       ret.push {object: baseParent, paths: out}
       for v,i in obj
         if v._klass == 'Base' or v._klass == 'InLine'
+          if i in obj._dirty
+            out.push {path: prefix + '.' + i, value: v}
           ret.push { object: v, paths: [] }
           _getMongoSet(prefix + '.' + i, v, ret, baseParent, baseDirty)
         else
-          out.push {path: prefix + '.' + i, value: v}
-          baseDirty.push(prefix + '.' + i)
+          if i in obj._dirty
+            out.push {path: prefix + '.' + i, value: v}
+            baseDirty.push(prefix + '.' + i)
   else
     if obj is undefined
       return
@@ -325,7 +333,10 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       if _.isFunction(value) or attr in exclude
         continue
       if _.isArray(value)
-        _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
+        if '_'+attr in obj._dirty
+          ret.push { object: obj, paths: [{path: prefix + '.' + attr, value: value}] }
+        else
+          _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
       else if '_'+attr in obj._dirty
         for dct in ret
           if obj._klass == 'InLine'
@@ -365,4 +376,4 @@ soop = {}
 soop.Base  = Base
 soop.InLine = InLine
 soop.validate = validate
-#soop.array = array
+soop.array = array

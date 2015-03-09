@@ -148,7 +148,8 @@ describe 'suite basics', ->
       c2: [1,2,3,4,5]
 
     c1.save()
-    c1.c2[1] = 0
+    #c1.c2[1] = 0
+    c1.c2.set(1, 0)
     c1.save()
     c2 = C.findOne(c1._id)
     test.equal c1, c2
@@ -334,8 +335,8 @@ describe 'suite basics', ->
 
     x.save()
 
-    #x.x.y3.set(0,  3)
-    x.x.y3[0]=3
+    x.x.y3.set(0,  3)
+    #x.x.y3[0]=3
     x.save()
 
     x2 = X.findOne(x._id)
@@ -347,11 +348,11 @@ describe 'suite basics', ->
         y3: [1]
 
     x.save()
-    #x.x.y3 = soop.array([1,3])
-    #x.x.y3.set(1, 5)
+    x.x.y3 = soop.array([1,3])
+    x.x.y3.set(1, 5)
 
-    x.x.y3 = [1,3]
-    x.x.y3[1]=5
+    #x.x.y3 = [1,3]
+    #x.x.y3[1]=5
 
     x.save()
     x2 = X.findOne(x._id)
@@ -586,7 +587,7 @@ describe 'suite update', ->
     c1.save()
     c1.c = 'game over!'
     c1.save()
-    c1.c2 = [4,5]
+    c1.c2 = soop.array([4,5])
     c1.save()
 
     expect(spies.update_C).to.have.been.calledWith(c1._id, {$set: {c2: [4,5]}, $unset: {}})
@@ -597,9 +598,31 @@ describe 'suite update', ->
       y3: [1,2,3]
 
     y.save()
-    y.y3 = [4,5]
+    y.y3 = soop.array([4,5])
     y.save()
-    y.y2 = [new Z(z: 'sega'), new Z(z: 'sony')]
+    y.y2 = soop.array([new Z(z: 'sega'), new Z(z: 'sony')])
     y.save()
 
     expect(spies.update_Y).to.have.been.calledWith(y._id, {$set: {y2: [{z: 'sega'}, {z: 'sony'}]}, $unset: {}})
+
+  it 'test update dirty index array', (test)->
+    c1 = new C
+      c: 'hello world'
+      c2: [1,2,3]
+
+    c1.save()
+    c1.c2.set(1, 5)
+    c1.save()
+
+    expect(spies.update_C).to.have.been.calledWith(c1._id, {$set: {'c2.1': 5}, $unset: {}})
+
+  it 'test update dirty index array Z', (test)->
+    y = new Y
+      y2: [new Z(z: 'nintendo'), new Z(z: 'atari')]
+      y3: [1,2,3]
+
+    y.save()
+    y.y2.set(0, new Z(z: 'sega'))
+    y.save()
+
+    expect(spies.update_Y).to.have.been.calledWith(y._id, {$set: {'y2.0': {z: 'sega'}}, $unset: {}})
