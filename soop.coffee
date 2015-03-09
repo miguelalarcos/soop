@@ -371,9 +371,28 @@ getMongoSet = (obj, dirty) ->
     ret.push [elem, set, unset]
   return ret
 
+children = (schema) ->
+  ret = []
+  for key, value of schema
+    if key in ['collection', 'findOne', '__super__']
+      continue
+    sch = value.type[0] or value.type # chekear toda profundiad posible de array
+    if sch.prototype instanceof Base
+      collection = sch.collection
+      sch = sch.schema
+      ret.push
+        find: (x) ->
+          dct = {}
+          dct[key] = x._id
+          collection.find(dct)
+        children: children(sch)
+  return ret
+
+
 
 soop = {}
 soop.Base  = Base
 soop.InLine = InLine
 soop.validate = validate
 soop.array = array
+soop.children = children

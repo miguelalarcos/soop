@@ -9,8 +9,8 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.0.3.2');
   api.use('coffeescript');
-  api.addFiles('soop.coffee', 'client');
-  api.export('soop', 'client');
+  api.addFiles('soop.coffee', ['client', 'server']);
+  api.export('soop', ['client', 'server']);
 });
 
 Package.onTest(function(api) {
