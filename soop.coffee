@@ -172,7 +172,8 @@ save = (obj, schema)->
         unset = cloneWithFilter(unset, filter)
         if elem.object.constructor.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
           elem.object.constructor.collection.update(elem.object._id, {$set: set, $unset: unset})
-          elem.object._dirty = []
+          #elem.object._dirty = []
+          obj._dirty = []
     #
     ret._id = obj._id
   return [ret, toBDD]

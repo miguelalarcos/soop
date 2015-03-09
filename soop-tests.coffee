@@ -12,6 +12,9 @@ class C extends soop.Base
   @schema:
     c:
       type: String
+    c2:
+      type: [Number]
+      optional: true
 
 class B extends soop.InLine
   @schema:
@@ -19,12 +22,16 @@ class B extends soop.InLine
       type: String
     b2:
       type: C
+      optional: true
     b3:
       type: [C]
+      optional: true
     b4:
       type: [Number]
+      optional: true
     b5:
       type: [[C]]
+      optional: true
 
 class A extends soop.Base
   @collection: a
@@ -73,6 +80,15 @@ describe 'suite basics', ->
     test.isFalse a1.isValid()
     test.isFalse _.all((x.v for x in soop.validate(a1))) #, A.schema)))
 
+  it 'test new A + optional -> validate true', (test)->
+    a1 = new A
+      a: 'hello world'
+      a3: new B
+        b: 'please validate'
+
+    test.equal a1.a, 'hello world'
+    test.isTrue a1.isValid()
+    test.isTrue _.all((x.v for x in soop.validate(a1)))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -126,6 +142,16 @@ describe 'suite basics', ->
 
     a1.save()
     test.notEqual undefined, a1._id
+
+  it 'test save C', (test)->
+    c1 = new C
+      c2: [1,2,3,4,5]
+
+    c1.save()
+    c1.c2[1] = 0
+    c1.save()
+    c2 = C.findOne(c1._id)
+    test.equal c1, c2
 
   it 'test save A+C', (test)->
     a1 = new A
@@ -460,12 +486,14 @@ describe 'suite update', ->
     spies.create('update_A', a_collection, 'update')
     spies.create('update_C', c_collection, 'update')
     spies.create('insert_C', c_collection, 'insert')
+    spies.create('update_Y', y_collection, 'update')
 
   afterEach (test) ->
     Meteor.call 'delete'
     spies.restore('update_A')
     spies.restore('update_C')
     spies.restore('insert_C')
+    spies.restore('update_Y')
 
   it 'test update call basic', (test)->
     a1 = new A
@@ -493,6 +521,8 @@ describe 'suite update', ->
       b: 'atari'
 
     a1.save()
+
+    #falta el test
 
   it 'test update call overwrite', (test)->
     a1 = new A
@@ -546,3 +576,30 @@ describe 'suite update', ->
       c: 'atari'
     a1.save()
     expect(spies.update_A).to.have.been.calledWith(a1._id, {$set:{'a3.b2': a1.a3.b2._id}, $unset: {}})
+
+
+  it 'test update consecutive calls', (test)->
+    c1 = new C
+      c: 'hello world'
+      c2: [1,2,3]
+
+    c1.save()
+    c1.c = 'game over!'
+    c1.save()
+    c1.c2 = [4,5]
+    c1.save()
+
+    expect(spies.update_C).to.have.been.calledWith(c1._id, {$set: {c2: [4,5]}, $unset: {}})
+
+  it 'test update consecutive calls 2', (test)->
+    y = new Y
+      y2: [new Z(z: 'nintendo'), new Z(z: 'atari')]
+      y3: [1,2,3]
+
+    y.save()
+    y.y3 = [4,5]
+    y.save()
+    y.y2 = [new Z(z: 'sega'), new Z(z: 'sony')]
+    y.save()
+
+    expect(spies.update_Y).to.have.been.calledWith(y._id, {$set: {y2: [{z: 'sega'}, {z: 'sony'}]}, $unset: {}})

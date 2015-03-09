@@ -120,6 +120,8 @@ Look at the tests for more information.
 TODO
 ----
 * Integrate with ```simple-schema```
+* $set and $unset for arrays.
+* test consecutives updates.
 * Philosophy:
   Is it a good idea to have that kind of OOP with Meteor?
 
