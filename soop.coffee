@@ -1,53 +1,54 @@
 exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__', 'constructor']
 
-array = (v) ->
-  v.set = setterArray(v)
-  return v
+#array = (v) ->
+#  v.set = setterArray(v)
+#  return v
 
-_validate = (x, klass)->
-  if x is undefined and klass.optional == true
-    return [true, '']
+elementValidate = (k, x, klass, optional)->
+  if x is undefined and optional == true
+    return {k:k, v: true, m: ''} #[true, '']
   if x is undefined
-    return [false, 'value undefined']
+    return {k:k, v: false, m:'value undefined'} #[false, 'value undefined']
   if klass is String
     if _.isString(x)
-      {v:true, m:''}
+      {k:k, v:true, m:''}
     else
-      {v:false, m: x + ' must be String'}
+      {k:k, v:false, m: x + ' must be String'}
   else if klass is Number
     if _.isNumber(x)
-      {v:true, m:''}
+      {k:k, v:true, m:''}
     else
-      {v:false. x + ' must be Number'}
+      {k:k, v:false. x + ' must be Number'}
   else if klass is Boolean
     if _.isBoolean(x)
-      {v:true, m:''}
+      {k:k, v:true, m:''}
     else
-      {v:false,  m: x + ' must be a Boolean'}
+      {k:k, v:false,  m: x + ' must be a Boolean'}
   else if klass is Date
     if _.isDate(x)
-      {v:true, m:''}
+      {k:k, v:true, m:''}
     else
-      {v:false,  m: x + ' must be a Date'}
+      {k:k, v:false,  m: x + ' must be a Date'}
   else
     if x instanceof klass
-      {v:true, m:''}
+      {k:k, v:true, m:''}
     else
-      {v:false,  m: x + ' must be of type ' + klass}
+      {k:k, v:false,  m: x + ' must be of type ' + klass}
 
 validateArray = (value, schema)->
   ret = []
-  for v in value
+  for v, i in value
     if _.isArray(v) #
       ret.push validateArray(v, schema[0]) #
     else if v instanceof Base or v instanceof InLine
-      ret.push _validate(v, schema[0])
-      ret.push validate(v, schema[0])
+      ret.push elementValidate(i, v, schema[0], schema.optional)
+      ret.push validate(v) #, schema[0])
     else
-      ret.push _validate(v, schema[0])
+      ret.push elementValidate(i, v, schema[0], schema.optional)
   return ret
 
-validate = (obj, schema) ->
+validate = (obj) ->
+  schema = obj.constructor.schema
   ret = []
   obj2 = {}
   for key in _.keys(schema)
@@ -60,15 +61,15 @@ validate = (obj, schema) ->
     if _.isFunction(value) or key in exclude
       continue
     if value instanceof Base or value instanceof InLine
-      r = validate(value, schema[key].type.schema)
+      r = validate(value) #, schema[key].type.schema)
       ret = _.flatten(ret.concat(r))
     else if _.isArray(value)
       validateArray(value, schema[key].type)
     else
-      if _.isFunction(schema)
-        ret.push _validate(value, schema)
-      else
-        ret.push _validate(value, schema[key].type)
+      #if _.isFunction(schema)
+      #  ret.push elementValidate(key, value, schema)
+      #else
+        ret.push elementValidate(key, value, schema[key].type, schema[key].optional)
 
   return ret
 
@@ -94,6 +95,7 @@ save_array = (array, schema)->
       toBDD.push v
   return [ret, toBDD]
 
+
 cloneWithFilter = (obj, filter) ->
   if _.isArray(obj)
     ret = []
@@ -109,12 +111,13 @@ cloneWithFilter = (obj, filter) ->
     return obj
   return ret
 
-_filter = (obj, advanced) ->
+
+filter = (obj) ->
   if not _.isObject(obj)
     return obj
 
   for attr, value of obj
-    if _.isFunction(value) or (advanced and attr in exclude)
+    if _.isFunction(value) or attr in exclude
       delete obj[attr]
       continue
 
@@ -122,13 +125,6 @@ _filter = (obj, advanced) ->
       obj[attr[1..]] = obj[attr]
       delete obj[attr]
   return obj
-
-basicFilter = (obj) ->
-  return _filter(obj, false)
-
-advancedFilter = (obj) ->
-  return _filter(obj, true)
-
 
 save = (obj, schema)->
   ret = {}
@@ -151,7 +147,7 @@ save = (obj, schema)->
         ret[key] = value
         toBDD[key] = value
 
-  toBDD = cloneWithFilter(toBDD, basicFilter)
+  #toBDD = cloneWithFilter(toBDD, basicFilter)
 
   toBDD._dirty = obj._dirty
   toBDD.constructor = obj.constructor # refactorizar a toBDD._collection
@@ -167,20 +163,13 @@ save = (obj, schema)->
     if obj._id is undefined
       for attr in exclude
         delete toBDD[attr]
-      docToInsert = cloneWithFilter(toBDD, advancedFilter)
+      docToInsert = cloneWithFilter(toBDD, filter)
       obj._id = obj.constructor.collection.insert(docToInsert)
       obj._dirty = []
     else
-      out = getMongoSet(toBDD, dirty)
-      for elem in out
-        set = {}
-        unset = {}
-        for pv in elem.paths
-          if pv.value is undefined
-            unset[pv.path[1..]] = ''
-          else if pv.path not in exclude
-            set[pv.path[1..]] = pv.value
-
+      for [elem, set, unset] in getMongoSet(toBDD, dirty)
+        set = cloneWithFilter(set, filter)
+        unset = cloneWithFilter(unset, filter)
         if elem.object.constructor.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
           elem.object.constructor.collection.update(elem.object._id, {$set: set, $unset: unset})
           elem.object._dirty = []
@@ -358,11 +347,21 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
 getMongoSet = (obj, dirty) ->
   out = [{object: obj, paths: []}]
   _getMongoSet('', obj, out, obj, dirty)
-  return out
+  ret = []
+  for elem in out
+    set = {}
+    unset = {}
+    for pv in elem.paths
+      if pv.value is undefined
+        unset[pv.path[1..]] = ''
+      else if pv.path not in exclude
+        set[pv.path[1..]] = pv.value
+    ret.push [elem, set, unset]
+  return ret
 
 
 soop = {}
 soop.Base  = Base
 soop.InLine = InLine
 soop.validate = validate
-soop.array = array
+#soop.array = array

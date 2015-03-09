@@ -33,7 +33,7 @@ class A extends soop.Base
       type: String
     a2:
       type: C
-      optional: false
+      optional: true
     a3:
       type: B
 
@@ -71,7 +71,8 @@ describe 'suite basics', ->
 
     test.equal a1.a, 'hello world'
     test.isFalse a1.isValid()
-    test.isFalse _.all((x.v for x in soop.validate(a1, A.schema)))
+    test.isFalse _.all((x.v for x in soop.validate(a1))) #, A.schema)))
+
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -113,7 +114,8 @@ describe 'suite basics', ->
         b: 'game over!'
         b2: new C
           c: 'amstrad'
-        b3: soop.array([new C c:'atari'])
+        #b3: soop.array([new C c:'atari'])
+        b3: [new C c:'atari']
 
     test.equal a1.a3.b3[0].c, 'atari'
 
@@ -203,7 +205,7 @@ describe 'suite basics', ->
         b5: [[new C c:'atari']]
 
     test.isTrue a1.isValid()
-    test.isTrue _.all( (x.v for x in soop.validate(a1, A.schema ) ))
+    test.isTrue _.all( (x.v for x in soop.validate(a1))) #, A.schema ) ))
 
   it 'test types A+C+B+C+[C]', (test)->
     a1 = new A
@@ -306,7 +308,8 @@ describe 'suite basics', ->
 
     x.save()
 
-    x.x.y3.set(0,  3)
+    #x.x.y3.set(0,  3)
+    x.x.y3[0]=3
     x.save()
 
     x2 = X.findOne(x._id)
@@ -318,8 +321,12 @@ describe 'suite basics', ->
         y3: [1]
 
     x.save()
-    x.x.y3 = soop.array([1,3])
-    x.x.y3.set(1, 5)
+    #x.x.y3 = soop.array([1,3])
+    #x.x.y3.set(1, 5)
+
+    x.x.y3 = [1,3]
+    x.x.y3[1]=5
+
     x.save()
     x2 = X.findOne(x._id)
     test.equal x2.x.y3, [1,5]
@@ -418,7 +425,8 @@ describe 'suite insert', ->
         b: 'game over!'
         b2: new C
           c: 'amstrad'
-        b3: soop.array([new C c:'atari'])
+        #b3: soop.array([new C c:'atari'])
+        b3 : [new C c:'atari']
 
     a1.save()
     expect(spies.insert_C).to.have.been.calledWith({c: "insert coin"})
