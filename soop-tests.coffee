@@ -2,6 +2,8 @@ a = new Mongo.Collection 'TestA'
 c = new Mongo.Collection 'TestC'
 x = new Mongo.Collection 'TestX'
 y = new Mongo.Collection 'TestY'
+u = new Mongo.Collection 'TestU'
+w = new Mongo.Collection 'TestW'
 x_collection = x
 a_collection = a
 c_collection = c
@@ -626,3 +628,48 @@ describe 'suite update', ->
     y.save()
 
     expect(spies.update_Y).to.have.been.calledWith(y._id, {$set: {'y2.0': {z: 'sega'}}, $unset: {}})
+
+###
+@u = new Mongo.Collection "U"
+@w = new Mongo.Collection "W"
+
+class @W extends soop.Base
+  @collection: w
+  @schema:
+    w:
+      type: Number
+
+class @V extends soop.InLine
+  @schema:
+    v:
+      type: String
+    v2:
+      type: [W]
+
+class @U extends soop.Base
+  @collection: u
+  @schema:
+    u:
+      type: [V]
+
+
+describe 'children', ->
+  beforeEach (test)->
+    Meteor.call 'delete'
+
+  afterEach (test) ->
+    Meteor.call 'delete'
+
+  it 'test children', (test) ->
+    u = new U
+      u: [
+        new V
+          v: 'hello'
+          v2: [new W
+            w: 5
+          ]
+        ]
+    u.save()
+    soop._children(u, '', [])
+
+###

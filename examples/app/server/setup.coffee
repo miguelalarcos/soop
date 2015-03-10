@@ -25,7 +25,7 @@ b1 = new B
 b2 = new B
   b: 'game over!'
   #b2: [[c1, c2], [c3, c4]]
-  b2:  [c1, c2]
+  b2:  [c3, c4 ]
 
 a1 = new A
   a: [b1, b2]

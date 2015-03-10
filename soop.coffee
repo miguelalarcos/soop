@@ -373,37 +373,71 @@ getMongoSet = (obj, dirty) ->
     ret.push [elem, set, unset]
   return ret
 
-children = (schema) ->
-  ret = []
-  for key, value of schema
-    if key in ['collection', 'findOne', '__super__']
-      continue
-    value = value.type
-    while value[0]
-      value = value[0]
-
-    sch = value
-    console.log sch
-    console.log sch.prototype instanceof Base, sch.prototype instanceof InLine
-    if sch.prototype instanceof Base
-      collection = sch.collection
-      sch = sch.schema
-      ret.push
-        find: (x) ->
-          dct = {}
-          dct[key] = x._id
-          collection.find(dct)
-        children: children(sch)
-      console.log 'ret.push', dct, collection
+traverseSubDocs = (root, path) ->
+  console.log 'inicio de traverse', path, root
+  currentSubDoc = root
+  subdocs = []
+  paths = path.split('.')
+  while paths.length > 0
+    index = paths.shift()
+    if index == '$'
+      console.log '(1)-> $', currentSubDoc
+      for elem, i in currentSubDoc
+        console.log 'llamamos a traverse con index', i, currentSubDoc
+        subdocs.push traverseSubDocs(currentSubDoc[i], paths.join('.'))
     else
-      children
-  return ret
+      console.log '(2)->index', index, currentSubDoc
+      currentSubDoc = currentSubDoc[index]
 
+  if currentSubDoc isnt undefined
+    subdocs.push currentSubDoc
+  return _.flatten(subdocs)
 
+children = (K, baseCollection, path, baseKlass) ->
+  #console.log 'inicio, path', path
+  lista = []
+  for key, value of K.schema
+    if key in exclude or _.isFunction(value)
+      #console.log 'excluimos key', key
+      continue
+    #console.log 'estudiamos key', key, value.type
+    if _.isArray(value.type)
+      #console.log '** es array'
+      if value.type[0].prototype instanceof Base
+        #console.log '*** es base'
+        collection = value.type[0].collection
+        return [{
+          find: (x) ->
+            path_ = path[1..] + '.$.' + key
+            #console.log new baseKlass(x, false, false).a[0].b2
+            rootDoc = baseCollection.findOne({_id: x._id}, {path_: 1})
+            zzz = traverseSubDocs rootDoc, path_
+            console.log 'traverse', zzz
+            console.log collection.find({}).fetch()
+            collection.find({_id: {$in: zzz }})
+            #collection.find({_id: {$in: (z[path_+'._id'] for z in baseCollection.find({_id: x._id}, {path_: 1}).fetch()) }})
+          children: [] # children: [_children()]
+        }]
+      else if value.type[0].prototype instanceof InLine
+        lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
+    else
+      #console.log 'else1', value
+      #console.log 'else2', value.type
+      #console.log 'else3', value.type[0]
+      klass = value.type[0] or value.type
+      #console.log 'else', klass, klass.prototype instanceof Base, klass.prototype instanceof InLine
+      if klass.prototype instanceof Base
+        lista.push children(klass, klass.collection, path+'.'+key, klass)
+      else if klass.prototype instanceof InLine
+        lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
+  return _.flatten(lista)
+
+pCChildren = (K) ->
+  return children(K, K.collection, '', K)
 
 soop = {}
 soop.Base  = Base
 soop.InLine = InLine
 soop.validate = validate
 soop.array = array
-soop.children = children
+soop.pCChildren = pCChildren
