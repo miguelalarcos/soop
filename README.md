@@ -115,13 +115,25 @@ API
   ```
   It is useful to know what exactly fails.
 
+* array:
+
+  wrap a normal array to have a method *set* (set(index, value -> ) to mark as dirty the position of that array.
+
+* soop.pCChildren:
+
+  It's an useful function to obtain the children part of the ```publish-composite```, given a class.
+   ```coffee
+   pCChildren = (K) -> returns [{find: ..., children: ...}, ...]
+   ```
+
 Look at the tests for more information.
 
 TODO
 ----
-* Integrate with ```simple-schema```
-* $set and $unset for arrays.
-* test consecutives updates.
+* Integrate with ```simple-schema```.
+* test consecutive updates.
+* deep in soop.pCChildren.
+* test traverseSubDocs and pCChildren.
 * Philosophy:
   Is it a good idea to have that kind of OOP with Meteor?
 

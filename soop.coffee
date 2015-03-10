@@ -374,19 +374,16 @@ getMongoSet = (obj, dirty) ->
   return ret
 
 traverseSubDocs = (root, path) ->
-  console.log 'inicio de traverse', path, root
+
   currentSubDoc = root
   subdocs = []
   paths = path.split('.')
   while paths.length > 0
     index = paths.shift()
     if index == '$'
-      console.log '(1)-> $', currentSubDoc
       for elem, i in currentSubDoc
-        console.log 'llamamos a traverse con index', i, currentSubDoc
         subdocs.push traverseSubDocs(currentSubDoc[i], paths.join('.'))
     else
-      console.log '(2)->index', index, currentSubDoc
       currentSubDoc = currentSubDoc[index]
 
   if currentSubDoc isnt undefined
@@ -394,38 +391,25 @@ traverseSubDocs = (root, path) ->
   return _.flatten(subdocs)
 
 children = (K, baseCollection, path, baseKlass) ->
-  #console.log 'inicio, path', path
   lista = []
   for key, value of K.schema
     if key in exclude or _.isFunction(value)
-      #console.log 'excluimos key', key
       continue
-    #console.log 'estudiamos key', key, value.type
     if _.isArray(value.type)
-      #console.log '** es array'
       if value.type[0].prototype instanceof Base
-        #console.log '*** es base'
         collection = value.type[0].collection
         return [{
           find: (x) ->
             path_ = path[1..] + '.$.' + key
-            #console.log new baseKlass(x, false, false).a[0].b2
-            rootDoc = baseCollection.findOne({_id: x._id}, {path_: 1})
-            zzz = traverseSubDocs rootDoc, path_
-            console.log 'traverse', zzz
-            console.log collection.find({}).fetch()
-            collection.find({_id: {$in: zzz }})
-            #collection.find({_id: {$in: (z[path_+'._id'] for z in baseCollection.find({_id: x._id}, {path_: 1}).fetch()) }})
-          children: [] # children: [_children()]
+            rootDoc = x # baseCollection.findOne({_id: x._id}, {path_: 1}) !!!!!!!!!!!!!!!!!!!!
+            collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
+          children: []
+          #children: children(value.type[0], collection, '', value.type[0])
         }]
       else if value.type[0].prototype instanceof InLine
         lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
     else
-      #console.log 'else1', value
-      #console.log 'else2', value.type
-      #console.log 'else3', value.type[0]
       klass = value.type[0] or value.type
-      #console.log 'else', klass, klass.prototype instanceof Base, klass.prototype instanceof InLine
       if klass.prototype instanceof Base
         lista.push children(klass, klass.collection, path+'.'+key, klass)
       else if klass.prototype instanceof InLine
