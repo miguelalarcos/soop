@@ -1,6 +1,6 @@
 Package.describe({
   name: 'miguelalarcos:soop',
-  version: '0.3.3',
+  version: '0.3.4',
   summary: 'Simple Object Oriented Programming for Meteor',
   git: 'https://github.com/miguelalarcos/soop.git',
   documentation: 'README.md'
@@ -21,6 +21,7 @@ Package.onTest(function(api) {
   api.use('underscore', 'client');
   api.use('practicalmeteor:munit', 'client');
   api.addFiles('soop-tests.coffee', 'client');
+  api.addFiles('test-functions.coffee', 'client');
   api.addFiles('soop-tests-server.coffee', 'server');
 });
 

@@ -4,6 +4,18 @@ array = (v) ->
   v.set = setterArray(v)
   return v
 
+nextSchemaAttr = (S, attr) ->
+  x = S[attr].type
+  while x[0]
+    x = x[0]
+  x.schema
+
+objectKlass = (obj) ->
+  obj.constructor
+
+subKlass = (klass, super_) ->
+  klass.prototype instanceof super_
+
 elementValidate = (k, x, klass, optional)->
   if x is undefined and optional == true
     return {k:k, v: true, m: ''} #[true, '']
@@ -398,14 +410,19 @@ children = (K, baseCollection, path, baseKlass) ->
     if _.isArray(value.type)
       if value.type[0].prototype instanceof Base
         collection = value.type[0].collection
-        return [{
+        path_ = path[1..] + '.$.' + key
+        if /^\./.test(path_) then path_ = path_[1..]
+        docs = [{
           find: (x) ->
-            path_ = path[1..] + '.$.' + key
-            rootDoc = x # baseCollection.findOne({_id: x._id}, {path_: 1}) !!!!!!!!!!!!!!!!!!!!
+            #path_ = path[1..] + '.$.' + key
+            rootDoc = x                               # baseCollection.findOne({_id: x._id}, {path_: 1}) !!!!!!!!!!!!!!!!!!!!
             collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
-          children: []
-          #children: children(value.type[0], collection, '', value.type[0])
+          #children: []
+          children: children(value.type[0], collection, '', value.type[0])
         }]
+        docs[0].collection = collection
+        docs[0].path = path_
+        return docs
       else if value.type[0].prototype instanceof InLine
         lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
     else
@@ -425,3 +442,6 @@ soop.InLine = InLine
 soop.validate = validate
 soop.array = array
 soop.pCChildren = pCChildren
+soop._nextSchemaAttr = nextSchemaAttr
+soop._traverseSubDocs = traverseSubDocs
+soop._children = children
