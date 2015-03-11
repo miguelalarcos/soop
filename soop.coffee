@@ -16,7 +16,7 @@ nextKlassAttr = (K, attr) ->
     x = x[0]
   return x
 
-objectClass = (obj) ->
+getKlass = (obj) ->
   obj.constructor
 
 isSubClass = (klass, super_) ->
@@ -66,7 +66,7 @@ validateArray = (value, schema)->
   return ret
 
 validate = (obj) ->
-  schema = obj.constructor.schema
+  schema = getKlass(obj).schema
   ret = []
   obj2 = {}
   for key in _.keys(schema)
@@ -164,7 +164,7 @@ save = (obj, schema)->
         toBDD[key] = value
 
   toBDD._dirty = obj._dirty
-  toBDD.constructor = obj.constructor # refactorizar a toBDD._collection
+  toBDD.constructor = getKlass(obj) # obj.constructor # refactorizar a toBDD._collection
   if obj instanceof Base
     toBDD._klass = 'Base'
   else if obj instanceof InLine
@@ -178,14 +178,15 @@ save = (obj, schema)->
       for attr in exclude
         delete toBDD[attr]
       docToInsert = cloneWithFilter(toBDD, filter)
-      obj._id = obj.constructor.collection.insert(docToInsert)
+      obj._id = getKlass(obj).collection.insert(docToInsert)
       obj._dirty = []
     else
       for [elem, set, unset] in getMongoSet(toBDD, dirty)
         set = cloneWithFilter(set, filter)
         unset = cloneWithFilter(unset, filter)
-        if elem.object.constructor.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
-          elem.object.constructor.collection.update(elem.object._id, {$set: set, $unset: unset})
+        klass = getKlass(elem.object)
+        if klass.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
+          klass.collection.update(elem.object._id, {$set: set, $unset: unset})
           #elem.object._dirty = []
           obj._dirty = []
     #
@@ -240,21 +241,21 @@ class Base
     doFindOne = doFindOne or true
     args = args or {}
 
+    klass = getKlass(@)
     if args._id
       @_id = args._id
       if doFindOne
-        args = @constructor.collection.findOne(args._id)
+        args = klass.collection.findOne(args._id)
 
-    schema = @constructor.schema
+    schema = klass.schema
     if _.isString(args)
-      values = create args, @constructor
+      values = create args, klass
     else
       values = create args, schema
 
     for key, value of values
       if not _.isFunction(value)
         @[key] = value
-
 
     if not noProperties and not @_propertyCreated
       properties(@)
@@ -275,7 +276,7 @@ class Base
 class InLine
   constructor: (args, noProperties)->
 
-    schema = @constructor.schema
+    schema = getKlass(@).schema #@constructor.schema
     for key, value of args
       #if key in exclude  # !!!!!!!!!!!!!!!!!!
       if /^_/.test(key) then key = key[1..]
@@ -297,7 +298,7 @@ class InLine
     @_dirty = []
 
   isValid : ->
-    _.all( (x.v for x in validate(@, @constructor.schema ) ))
+    _.all( (x.v for x in validate(@, getKlass(@).schema ) ))
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -316,7 +317,7 @@ setterArray = (array) ->
 properties = (obj) ->
   if obj is undefined
     return
-  for attr, value of obj.constructor.schema
+  for attr, value of getKlass(obj).schema #obj.constructor.schema
     if _.isArray(value.type) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
       obj[attr].set = setterArray(obj['_' + attr])
