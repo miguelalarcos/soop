@@ -196,7 +196,7 @@ createArray = (value, schema)-> # no se le pasa un schema sino un schema_key
   ret = []
   for v in value
     if _.isArray(v)
-      ret.push createArray(v, schema[0])
+      ret.push createArray(v, schema[0] or schema.type[0])
     else
       klass = schema[0] or schema.type[0]
       if _.isString(v) and isSubClass(klass, Base)
@@ -408,9 +408,12 @@ children = (K, baseCollection, path, baseKlass) ->
   for key, value of K.schema
     if key in exclude or _.isFunction(value)
       continue
-    if _.isArray(value.type) #no vale con tomar value.type[0] pues pueden ser [[[]]] anidados !!!!!!!!!!!!!!!!!!!!!!!
-      if isSubClass(value.type[0], Base)
-        collection = value.type[0].collection
+    if _.isArray(value.type)
+      klass = value.type[0]
+      while klass[0]
+        klass = klass[0]
+      if isSubClass(klass, Base)
+        collection = klass.collection
         path_ = path + '.$.' + key
         if /^\./.test(path_) then path_ = path_[1..]
         if /^\$\./.test(path_) then path_ = path_[2..]
@@ -418,14 +421,14 @@ children = (K, baseCollection, path, baseKlass) ->
           find: (x) ->
             rootDoc = x
             collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
-          children: children(value.type[0], collection, '', value.type[0])
+          children: children(klass, collection, '', klass)
         }]
         docs[0].collection = collection
         docs[0].path = path_
-        docs[0].klass = value.type[0]
+        docs[0].klass = klass
         return docs
-      else if isSubClass(value.type[0], InLine)
-        lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
+      else if isSubClass(klass, InLine)
+        lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
     else
       klass = value.type
       if isSubClass(klass, Base)

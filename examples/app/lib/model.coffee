@@ -12,7 +12,7 @@ class @B extends soop.InLine
     b:
       type: String
     b2:
-      type: [C]
+      type: [[C]]
 
 class @A extends soop.Base
   @collection: a

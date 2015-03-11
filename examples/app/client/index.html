@@ -6,7 +6,9 @@
                 {{this.b}}:
                 <div>
                     {{#each this.b2}}
-                        {{this.c}}
+                        {{#each this}}
+                            {{this.c}}
+                        {{/each}},
                     {{/each}}
                 </div>
             {{/each}}
