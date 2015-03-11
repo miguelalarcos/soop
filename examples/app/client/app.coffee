@@ -10,7 +10,7 @@ Router.map ->
     controller: HomeController
 
 Template.home.events
-  'click button': (e,t) ->
+  'click .add': (e,t) ->
     b1 = new B
       b: 'amstrad'
       b2: [[new C(c:1000), new C(c:1001)],[new C(c:1002), new C(c:1003)]]
@@ -23,3 +23,10 @@ Template.home.events
       a: [b1, b2]
 
     a1.save()
+
+  'click .change': (e,t)->
+    _id = c.findOne()._id
+    elem = C.findOne(_id)
+    elem.c = 0
+    elem.save()
+
