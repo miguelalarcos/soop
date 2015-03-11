@@ -387,7 +387,8 @@ getMongoSet = (obj, dirty) ->
   return ret
 
 traverseSubDocs = (root, path) ->
-
+  if /^\./.test(path) then path = path[1..]
+  console.log path, root
   currentSubDoc = root
   subdocs = []
   paths = path.split('.')
@@ -401,6 +402,7 @@ traverseSubDocs = (root, path) ->
 
   if currentSubDoc isnt undefined
     subdocs.push currentSubDoc
+  console.log _.flatten(subdocs)
   return _.flatten(subdocs)
 
 children = (K, baseCollection, path, baseKlass) ->
@@ -426,13 +428,21 @@ children = (K, baseCollection, path, baseKlass) ->
         docs[0].collection = collection
         docs[0].path = path_
         docs[0].klass = klass
-        return docs
+        return docs # seguro que hay que hacer return y no un lista.push ??? !!!!!!!!!!!!!!!!!!!!!!!!!!!! ALERT
+        #lista.push docs
       else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
     else
       klass = value.type
       if isSubClass(klass, Base)
-        lista.push children(klass, klass.collection, path+'.'+key, klass)
+        #lista.push children(klass, klass.collection, path+'.'+key, klass)
+        docs = [
+          find: (x) ->
+            rootDoc = x
+            klass.collection.find({_id: {$in: traverseSubDocs(rootDoc, path+'.'+key) }})
+          children: children(klass, klass.collection, '', klass)
+        ]
+        lista.push docs
       else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
   return _.flatten(lista)
