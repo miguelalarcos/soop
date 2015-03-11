@@ -149,14 +149,13 @@ save = (obj, schema)->
     if not _.isFunction(value) and key not in exclude and /^_/.test(key)
       key = key[1..]
       if _.isArray(value)
-        [ret[key], toBDD[key]] = save_array(value, schema[key].type) # no utilizo nextSchemaAttr porque es necesario un push por []
+        [ret[key], toBDD[key]] = save_array(value, schema[key].type)
       else if value instanceof Base
-        #[doc, nothing] = save(value, schema[key].type.schema)
         [doc, nothing] = save(value, nextSchemaAttr(schema, key))
         toBDD[key] = doc._id
         ret[key] = doc
       else if value instanceof InLine
-        [doc, doc2] = save(value, nextSchemaAttr(schema, key)) #schema[key].type.schema)
+        [doc, doc2] = save(value, nextSchemaAttr(schema, key))
         ret[key] = doc
         toBDD[key] = doc2
       else
@@ -202,8 +201,18 @@ createArray = (value, schema)-> # no se le pasa un schema sino un schema_key
       klass = schema[0] or schema.type[0]
       if _.isString(v) and isSubClass(klass, Base)
         ret.push new klass({_id: v})
-      else if isSubClass(klass, Base) or isSubClass(klass, InLine)
-        ret.push new klass(v)
+      else if isSubClass(klass, Base)
+        if v instanceof Base
+          ret.push v
+          create v, getKlass(v).schema
+        else
+          ret.push new klass(v)
+      else if isSubClass(klass, InLine)
+        if v instanceof InLine
+          ret.push v
+          create v, getKlass(v).schema
+        else
+          ret.push new klass(v)
       else
         ret.push v
   return ret
