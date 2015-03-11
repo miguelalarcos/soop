@@ -5,6 +5,7 @@ array = (v) ->
   return v
 
 nextSchemaAttr = (S, attr) ->
+  if not S[attr] then S = S.schema # then return S
   x = S[attr].type
   while x[0]
     x = x[0]
@@ -388,7 +389,6 @@ getMongoSet = (obj, dirty) ->
 
 traverseSubDocs = (root, path) ->
   if /^\./.test(path) then path = path[1..]
-  console.log path, root
   currentSubDoc = root
   subdocs = []
   paths = path.split('.')
@@ -402,8 +402,19 @@ traverseSubDocs = (root, path) ->
 
   if currentSubDoc isnt undefined
     subdocs.push currentSubDoc
-  console.log _.flatten(subdocs)
   return _.flatten(subdocs)
+
+helper = (klass, path)->
+  docs = {
+    find: (x) ->
+      rootDoc = x
+      klass.collection.find({_id: {$in: traverseSubDocs(rootDoc, path) }})
+    children: children(klass, klass.collection, '', klass)
+  }
+  docs.collection = klass.collection
+  docs.path = path
+  docs.klass = klass
+  return docs
 
 children = (K, baseCollection, path, baseKlass) ->
   lista = []
@@ -419,36 +430,30 @@ children = (K, baseCollection, path, baseKlass) ->
         path_ = path + '.$.' + key
         if /^\./.test(path_) then path_ = path_[1..]
         if /^\$\./.test(path_) then path_ = path_[2..]
-        docs = [{
-          find: (x) ->
-            rootDoc = x
-            collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
-          children: children(klass, collection, '', klass)
-        }]
-        docs[0].collection = collection
-        docs[0].path = path_
-        docs[0].klass = klass
-        return docs # seguro que hay que hacer return y no un lista.push ??? !!!!!!!!!!!!!!!!!!!!!!!!!!!! ALERT
+        lista.push helper(klass, path_)
+        #docs = {
+        #  find: (x) ->
+        #    rootDoc = x
+        #    collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
+        #  children: children(klass, collection, '', klass)
+        #}
+        #docs.collection = collection
+        #docs.path = path_
+        #docs.klass = klass
         #lista.push docs
       else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
     else
       klass = value.type
       if isSubClass(klass, Base)
-        #lista.push children(klass, klass.collection, path+'.'+key, klass)
-        docs = [
-          find: (x) ->
-            rootDoc = x
-            klass.collection.find({_id: {$in: traverseSubDocs(rootDoc, path+'.'+key) }})
-          children: children(klass, klass.collection, '', klass)
-        ]
-        lista.push docs
+        lista.push helper(klass, path + '.' + key )# docs
       else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
   return _.flatten(lista)
 
 pCChildren = (K) ->
   return children(K, K.collection, '', K)
+
 
 soop = {}
 soop.Base  = Base

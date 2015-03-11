@@ -4,5 +4,8 @@
         <div>
             {{this.value1.value1.value}}, {{this.value1.value2.value}}, {{this.value2.value1.value}}, {{this.value2.value2.value}}
         </div>
+        {{#each this.value3}}
+            {{this.value1.value}}
+        {{/each}}
     {{/each}}
 </template>

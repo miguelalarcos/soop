@@ -2,6 +2,8 @@
 @c = new Mongo.Collection "C"
 @e = new Mongo.Collection "E"
 @g = new Mongo.Collection "G"
+@h = new Mongo.Collection "H"
+@i = new Mongo.Collection "I"
 
 class @D extends soop.InLine
   @schema:
@@ -40,6 +42,18 @@ class @B extends soop.InLine
     value2:
       type: E
 
+class @I extends soop.Base
+  @collection: i
+  @schema:
+    value:
+      type: Number
+
+class @H extends soop.Base
+  @collection: h
+  @schema:
+    value1:
+      type: I
+
 class @A extends soop.Base
   @collection: a
   @schema:
@@ -47,3 +61,5 @@ class @A extends soop.Base
       type: B
     value2:
       type: C
+    value3:
+      type: [H]

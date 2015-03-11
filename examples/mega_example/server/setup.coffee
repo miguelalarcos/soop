@@ -2,6 +2,8 @@ a.remove({})
 c.remove({})
 e.remove({})
 g.remove({})
+h.remove({})
+i.remove({})
 
 elem = new A
   value1: new B
@@ -14,5 +16,6 @@ elem = new A
       value: 2
     value2: new G
       value: 3
+  value3: [new H(value1: new I(value: -1))]
 
 elem.save()
