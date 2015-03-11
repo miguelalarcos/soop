@@ -10,10 +10,16 @@ nextSchemaAttr = (S, attr) ->
     x = x[0]
   x.schema
 
-objectKlass = (obj) ->
+nextKlassAttr = (K, attr) ->
+  x = K.schema[attr].type
+  while x[0]
+    x = x[0]
+  return x
+
+objectClass = (obj) ->
   obj.constructor
 
-subKlass = (klass, super_) ->
+isSubClass = (klass, super_) ->
   klass.prototype instanceof super_
 
 elementValidate = (k, x, klass, optional)->
@@ -78,13 +84,8 @@ validate = (obj) ->
     else if _.isArray(value)
       validateArray(value, schema[key].type)
     else
-      #if _.isFunction(schema)
-      #  ret.push elementValidate(key, value, schema)
-      #else
-        ret.push elementValidate(key, value, schema[key].type, schema[key].optional)
-
+      ret.push elementValidate(key, value, schema[key].type, schema[key].optional)
   return ret
-
 
 save_array = (array, schema)->
   ret = []
@@ -97,7 +98,6 @@ save_array = (array, schema)->
       toBDD.push docs2
     else if _.isObject(v) and not (v instanceof Base)
       [doc, doc2 ]= save(v, schema[0].schema)
-      #[doc, doc2 ]= save(v, schema[0])  !!!!!!!!!!!!!!!1
       ret.push doc
       toBDD.push doc2
     else if v instanceof Base
@@ -149,20 +149,19 @@ save = (obj, schema)->
     if not _.isFunction(value) and key not in exclude and /^_/.test(key)
       key = key[1..]
       if _.isArray(value)
-        [ret[key], toBDD[key]] = save_array(value, schema[key].type)
+        [ret[key], toBDD[key]] = save_array(value, schema[key].type) # no utilizo nextSchemaAttr porque es necesario un push por []
       else if value instanceof Base
-        [doc, nothing] = save(value, schema[key].type.schema)
+        #[doc, nothing] = save(value, schema[key].type.schema)
+        [doc, nothing] = save(value, nextSchemaAttr(schema, key))
         toBDD[key] = doc._id
         ret[key] = doc
       else if value instanceof InLine
-        [doc, doc2] = save(value, schema[key].type.schema)
+        [doc, doc2] = save(value, nextSchemaAttr(schema, key)) #schema[key].type.schema)
         ret[key] = doc
         toBDD[key] = doc2
       else
         ret[key] = value
         toBDD[key] = value
-
-  #toBDD = cloneWithFilter(toBDD, basicFilter)
 
   toBDD._dirty = obj._dirty
   toBDD.constructor = obj.constructor # refactorizar a toBDD._collection
@@ -193,26 +192,26 @@ save = (obj, schema)->
     ret._id = obj._id
   return [ret, toBDD]
 
-
-createArray = (value, schema)->
+createArray = (value, schema)-> # no se le pas un schema sino un schema_key
   ret = []
   for v in value
     if _.isArray(v)
       ret.push createArray(v, schema[0])
     else
-      #klass = schema[0] or schema   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       klass = schema[0] or schema.type[0]
-      if _.isString(v) and klass.prototype instanceof Base
+      #if _.isString(v) and klass.prototype instanceof Base
+      if _.isString(v) and isSubClass(klass, Base)
         ret.push new klass({_id: v})
-      else if klass.prototype instanceof Base or klass.prototype instanceof InLine
-        ret.push new klass(v) # sera necesario llamar a create??
+      #else if klass.prototype instanceof Base or klass.prototype instanceof InLine
+      else if isSubClass(klass, Base) or isSubClass(klass, InLine)
+        ret.push new klass(v)
       else
         ret.push v
   return ret
 
 create = (obj, schema)->
   if _.isString(obj)
-    return new (schema)({_id: obj})
+    return new schema({_id: obj}) # no es un schema sino un constructor. Investigar donde se le pasa
 
   ret = {}
   for key, value of obj
@@ -228,7 +227,8 @@ create = (obj, schema)->
       ret['_'+key_] = createArray(value, schema[key_])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret['_'+key_] = new schema[key_].type(value, false, false)
-    else if _.isString(value) and schema[key_] and schema[key_].type.prototype instanceof Base
+    #else if _.isString(value) and schema[key_] and schema[key_].type.prototype instanceof Base
+    else if _.isString(value) and schema[key_] and isSubClass(schema[key_].type, Base)
       ret['_'+key_] = new (schema[key_].type)({_id: value})
     else
       ret['_'+key_] = value
@@ -284,7 +284,8 @@ class InLine
       klass = schema[key].type
       if _.isArray(value)
         @['_'+key] = createArray value, klass
-      else if klass.prototype instanceof InLine or klass.prototype instanceof Base
+      #else if klass.prototype instanceof InLine or klass.prototype instanceof Base
+      else if isSubClass(klass, InLine) or isSubClass(klass, Base)
         @['_'+key] = new klass value
       else
         @['_'+key] = value
@@ -319,7 +320,8 @@ properties = (obj) ->
     if _.isArray(value.type) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
       obj[attr].set = setterArray(obj['_' + attr])
-    else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj['_' + attr] isnt undefined
+    #else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj['_' + attr] isnt undefined
+    else if ( isSubClass(value.type, Base) or isSubClass(value.type, InLine)) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
     else
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
@@ -407,29 +409,31 @@ children = (K, baseCollection, path, baseKlass) ->
   for key, value of K.schema
     if key in exclude or _.isFunction(value)
       continue
-    if _.isArray(value.type)
-      if value.type[0].prototype instanceof Base
+    if _.isArray(value.type) #no vale con tomar value.type[0] pues pueden ser [[[]]] anidados
+      #if value.type[0].prototype instanceof Base
+      if isSubClass(value.type[0], Base)
         collection = value.type[0].collection
-        path_ = path[1..] + '.$.' + key
+        path_ = path + '.$.' + key
         if /^\./.test(path_) then path_ = path_[1..]
+        if /^\$\./.test(path_) then path_ = path_[2..]
         docs = [{
           find: (x) ->
-            #path_ = path[1..] + '.$.' + key
-            rootDoc = x                               # baseCollection.findOne({_id: x._id}, {path_: 1}) !!!!!!!!!!!!!!!!!!!!
+            rootDoc = x
             collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
-          #children: []
           children: children(value.type[0], collection, '', value.type[0])
         }]
         docs[0].collection = collection
         docs[0].path = path_
+        docs[0].klass = value.type[0]
         return docs
-      else if value.type[0].prototype instanceof InLine
+      else if isSubClass(value.type[0], InLine)
         lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
     else
-      klass = value.type[0] or value.type
-      if klass.prototype instanceof Base
+      #klass = value.type[0] or value.type !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      klass = value.type
+      if isSubClass(klass, Base) #klass.prototype instanceof Base
         lista.push children(klass, klass.collection, path+'.'+key, klass)
-      else if klass.prototype instanceof InLine
+      else if isSubClass(klass, InLine)# klass.prototype instanceof InLine
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
   return _.flatten(lista)
 
@@ -445,3 +449,4 @@ soop.pCChildren = pCChildren
 soop._nextSchemaAttr = nextSchemaAttr
 soop._traverseSubDocs = traverseSubDocs
 soop._children = children
+soop._nextKlassAttr = nextKlassAttr

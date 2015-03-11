@@ -110,9 +110,16 @@ describe 'test children', ->
 
   it 'test basic', (test) ->
     docs =  soop._children(A2, A2.collection, '', A2)
-
+    console.log docs
     test.equal docs[0].collection, 'c'
     test.equal docs[0].path, "a.$.b2"
     test.equal docs[0].children[0].collection, 'd'
-    test.equal docs[0].children[0].path, "$.c2"
+    test.equal docs[0].children[0].path, "c2"
 
+  it 'test basic', (test) ->
+    docs =  soop._children(A2, A2.collection, '', A2)
+    console.log docs
+    test.equal docs[0].collection, 'c'
+    test.equal docs[0].path, "a.$.b2"
+    test.equal docs[0].children[0].collection, 'd'
+    test.equal docs[0].children[0].path, "c2"
