@@ -193,17 +193,15 @@ save = (obj, schema)->
     ret._id = obj._id
   return [ret, toBDD]
 
-createArray = (value, schema)-> # no se le pas un schema sino un schema_key
+createArray = (value, schema)-> # no se le pasa un schema sino un schema_key
   ret = []
   for v in value
     if _.isArray(v)
       ret.push createArray(v, schema[0])
     else
       klass = schema[0] or schema.type[0]
-      #if _.isString(v) and klass.prototype instanceof Base
       if _.isString(v) and isSubClass(klass, Base)
         ret.push new klass({_id: v})
-      #else if klass.prototype instanceof Base or klass.prototype instanceof InLine
       else if isSubClass(klass, Base) or isSubClass(klass, InLine)
         ret.push new klass(v)
       else
@@ -211,8 +209,6 @@ createArray = (value, schema)-> # no se le pas un schema sino un schema_key
   return ret
 
 create = (obj, schema)->
-  if _.isString(obj)
-    return new schema({_id: obj}) # no es un schema sino un constructor. Investigar donde se le pasa
 
   ret = {}
   for key, value of obj
@@ -228,7 +224,6 @@ create = (obj, schema)->
       ret['_'+key_] = createArray(value, schema[key_])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
       ret['_'+key_] = new schema[key_].type(value, false, false)
-    #else if _.isString(value) and schema[key_] and schema[key_].type.prototype instanceof Base
     else if _.isString(value) and schema[key_] and isSubClass(schema[key_].type, Base)
       ret['_'+key_] = new (schema[key_].type)({_id: value})
     else
@@ -237,9 +232,9 @@ create = (obj, schema)->
 
 class Base
   constructor: (args, noProperties, doFindOne)->
-
-    doFindOne = doFindOne or true
+    if doFindOne is undefined then doFindOne = true
     args = args or {}
+    if _.isString(args) then args = {_id: args}
 
     klass = getKlass(@)
     if args._id
@@ -248,10 +243,7 @@ class Base
         args = klass.collection.findOne(args._id)
 
     schema = klass.schema
-    if _.isString(args)
-      values = create args, klass
-    else
-      values = create args, schema
+    values = create args, schema
 
     for key, value of values
       if not _.isFunction(value)
@@ -265,7 +257,7 @@ class Base
     @_klass = 'Base'
 
   isValid : ->
-    _.all( (x.v for x in validate(@, @constructor.schema ) ))
+    _.all( (x.v for x in validate(@, getKlass(@).schema ) ))
 
   save: ->
     save(@, @constructor.schema)
@@ -276,16 +268,14 @@ class Base
 class InLine
   constructor: (args, noProperties)->
 
-    schema = getKlass(@).schema #@constructor.schema
+    schema = getKlass(@).schema
     for key, value of args
-      #if key in exclude  # !!!!!!!!!!!!!!!!!!
       if /^_/.test(key) then key = key[1..]
       if (key in exclude) or (key not in _.keys(schema))
         continue
       klass = schema[key].type
       if _.isArray(value)
         @['_'+key] = createArray value, klass
-      #else if klass.prototype instanceof InLine or klass.prototype instanceof Base
       else if isSubClass(klass, InLine) or isSubClass(klass, Base)
         @['_'+key] = new klass value
       else
@@ -321,7 +311,6 @@ properties = (obj) ->
     if _.isArray(value.type) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
       obj[attr].set = setterArray(obj['_' + attr])
-    #else if (value.type.prototype instanceof Base or value.type.prototype instanceof InLine) and obj['_' + attr] isnt undefined
     else if ( isSubClass(value.type, Base) or isSubClass(value.type, InLine)) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
     else
@@ -410,8 +399,7 @@ children = (K, baseCollection, path, baseKlass) ->
   for key, value of K.schema
     if key in exclude or _.isFunction(value)
       continue
-    if _.isArray(value.type) #no vale con tomar value.type[0] pues pueden ser [[[]]] anidados
-      #if value.type[0].prototype instanceof Base
+    if _.isArray(value.type) #no vale con tomar value.type[0] pues pueden ser [[[]]] anidados !!!!!!!!!!!!!!!!!!!!!!!
       if isSubClass(value.type[0], Base)
         collection = value.type[0].collection
         path_ = path + '.$.' + key
@@ -430,11 +418,10 @@ children = (K, baseCollection, path, baseKlass) ->
       else if isSubClass(value.type[0], InLine)
         lista.push children(value.type[0], baseCollection, path+'.'+key, baseKlass)
     else
-      #klass = value.type[0] or value.type !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       klass = value.type
-      if isSubClass(klass, Base) #klass.prototype instanceof Base
+      if isSubClass(klass, Base)
         lista.push children(klass, klass.collection, path+'.'+key, klass)
-      else if isSubClass(klass, InLine)# klass.prototype instanceof InLine
+      else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
   return _.flatten(lista)
 
