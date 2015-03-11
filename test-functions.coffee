@@ -82,21 +82,32 @@ describe 'test traverse', ->
 
   it 'traverse basic2', (test) ->
     a = new A2
-      a: [
-        new B2
+      a:
+        [new B2
           b: 'hello'
-          b2: [
-            new C2
-              c2: [
-                new D2
-                  d: 5
-              ]
-          ]
-      ]
+          b2:
+            [new C2
+              c2:
+                [new D2
+                  d: 5]
+            ]
+        new B2
+          b: 'world'
+          b2:
+            [new C2
+              c2:
+                [new D2
+                  d: 7]
+            ]
+        ]
     subdocs = soop._traverseSubDocs(a, 'a.$.b')
-    test.equal subdocs, ['hello']
+    test.equal subdocs, ['hello', 'world']
+    subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
+    test.equal subdocs, [5, 7]
+
 
   it 'traverse basic3', (test) ->
+
     c = new C2
       c2: [
         new D2

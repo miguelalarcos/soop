@@ -394,9 +394,11 @@ traverseSubDocs = (root, path) ->
   paths = path.split('.')
   while paths.length > 0
     index = paths.shift()
+
     if index == '$'
       for elem, i in currentSubDoc
         subdocs.push traverseSubDocs(currentSubDoc[i], paths.join('.'))
+      return _.flatten(subdocs)
     else
       currentSubDoc = currentSubDoc[index]
 
@@ -426,21 +428,11 @@ children = (K, baseCollection, path, baseKlass) ->
       while klass[0]
         klass = klass[0]
       if isSubClass(klass, Base)
-        collection = klass.collection
+        #collection = klass.collection
         path_ = path + '.$.' + key
         if /^\./.test(path_) then path_ = path_[1..]
         if /^\$\./.test(path_) then path_ = path_[2..]
         lista.push helper(klass, path_)
-        #docs = {
-        #  find: (x) ->
-        #    rootDoc = x
-        #    collection.find({_id: {$in: traverseSubDocs(rootDoc, path_) }})
-        #  children: children(klass, collection, '', klass)
-        #}
-        #docs.collection = collection
-        #docs.path = path_
-        #docs.klass = klass
-        #lista.push docs
       else if isSubClass(klass, InLine)
         lista.push children(klass, baseCollection, path+'.'+key, baseKlass)
     else
