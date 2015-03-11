@@ -223,7 +223,7 @@ create = (obj, schema)->
     if _.isArray(value)
       ret['_'+key_] = createArray(value, schema[key_])
     else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine)
-      ret['_'+key_] = new schema[key_].type(value, false, false)
+      ret['_'+key_] = new schema[key_].type(value, false)
     else if _.isString(value) and schema[key_] and isSubClass(schema[key_].type, Base)
       ret['_'+key_] = new (schema[key_].type)({_id: value})
     else
@@ -231,7 +231,7 @@ create = (obj, schema)->
   return ret
 
 class Base
-  constructor: (args, noProperties, doFindOne)->
+  constructor: (args, doFindOne)->
     if doFindOne is undefined then doFindOne = true
     args = args or {}
     if _.isString(args) then args = {_id: args}
@@ -249,9 +249,9 @@ class Base
       if not _.isFunction(value)
         @[key] = value
 
-    if not noProperties and not @_propertyCreated
-      properties(@)
-      @_propertyCreated = true
+    #if not @_propertyCreated
+    properties(@)
+    #  @_propertyCreated = true
 
     @_dirty = []
     @_klass = 'Base'
@@ -266,7 +266,7 @@ class Base
     new @({_id: _id})
 
 class InLine
-  constructor: (args, noProperties)->
+  constructor: (args)->
 
     schema = getKlass(@).schema
     for key, value of args
@@ -281,9 +281,9 @@ class InLine
       else
         @['_'+key] = value
 
-    if not noProperties and not @_propertyCreated
-      properties(@)
-      @_propertyCreated = true
+    #if not @_propertyCreated
+    properties(@)
+    #  @_propertyCreated = true
     @_klass = 'InLine'
     @_dirty = []
 
