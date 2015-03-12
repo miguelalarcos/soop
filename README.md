@@ -127,6 +127,13 @@ API
    ```coffee
    pCChildren = (K) -> returns [{find: ..., children: ...}, ...]
    ```
+* soop.attachSchema:
+
+  You use like this at the root level:
+  ```coffee
+  soop.attachSchema(A)
+  ```
+  All collections involved are attached to its corresponding schema.
 
 Look at the tests and examples for more information. See the examples that uses ```simple-schema```.
 
