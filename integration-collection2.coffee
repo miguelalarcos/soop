@@ -127,6 +127,7 @@ describe 'basic suite integration with aldeed:collection2', ->
           c2: [5,6,7]
 
     test.isTrue elem.isValid()
+    console.log soop.validate(elem)
 
   it 'test validate [D]', (test) ->
     elem = new A
@@ -136,6 +137,11 @@ describe 'basic suite integration with aldeed:collection2', ->
         b2: new C
           c: 'game over!'
           c2: [5,6,7]
-          c3: [new D(d:1), {d: 2}]
+          c3: [new D(d:1), 2]
 
-    test.isTrue elem.isValid()
+    test.isFalse elem.isValid()
+    for x in soop.validate(elem)
+      if x.valid == false
+        test.equal x.path, '.a2.b2.c3.1.d'
+        test.equal x.message, 'D is required'
+        break

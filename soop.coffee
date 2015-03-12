@@ -6,7 +6,7 @@ array = (v) ->
   return v
 
 nextSchemaAttr = (S, attr) ->
-  if not S[attr] then S = S.schema # then return S
+  if not S[attr] then S = S.schema
   x = S[attr].type
   while x[0]
     x = x[0]
@@ -28,7 +28,7 @@ elementValidate = (obj, rklass, k, path)->
   simpleSchema = rklass._simpleSchema
   context = simpleSchema.newContext()
   valid = context.validateOne(obj, k)
-  return {k: path, v: valid, m: context.keyErrorMessage(k)}
+  return {path: path, valid: valid, message: context.keyErrorMessage(k)}
 
 validateArray = (obj, rklass, value, schema, path)->
   ret = []
@@ -57,7 +57,8 @@ validate = (obj, path) ->
     if _.isFunction(value) or key in exclude
       continue
     if value instanceof Base or value instanceof InLine
-      r = validate(value, path+'.'+key) # aqui pensar si validar value propiamente !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      #ret.push elementValidate(obj2, getKlass(obj), key, path+'.'+key)  # !
+      r = validate(value, path+'.'+key)
       ret = _.flatten(ret.concat(r))
     else if _.isArray(value)
       ret.push validateArray(obj2, getKlass(obj), value, schema[key].type, path+'.'+key)
@@ -146,11 +147,6 @@ save = (obj, schema)->
         toBDD[key] = value
 
   toBDD._dirty = obj._dirty
-  #toBDD.constructor = getKlass(obj) # obj.constructor # refactorizar a toBDD._collection
-  #if obj instanceof Base
-  #  toBDD._klass = 'Base'
-  #else if obj instanceof InLine
-  #  toBDD._klass = 'InLine'
   if obj._id
     toBDD._id = obj._id
 
@@ -169,7 +165,6 @@ save = (obj, schema)->
         klass = getKlass(elem.object)
         if klass.collection and (not _.isEmpty(set) or not _.isEmpty(unset))
           klass.collection.update(elem.object._id, {$set: set, $unset: unset})
-          #elem.object._dirty = []
           obj._dirty = []
     #
     ret._id = obj._id
@@ -242,16 +237,11 @@ class Base
         if not _.isFunction(value)
           @[key] = value
 
-      #if not @_propertyCreated
       properties(@)
-      #  @_propertyCreated = true
-
       @_dirty = []
-      #@_klass = 'Base'
 
   isValid : ->
-    #_.all( (x.v for x in validate(@, getKlass(@).schema ) ))
-    _.all( (x.v for x in validate(@ ) ))
+    _.all((x.valid for x in validate(@)))
 
   save: ->
     save(@, @constructor.schema)
@@ -275,14 +265,11 @@ class InLine
         else
           @['_'+key] = value
 
-      #if not @_propertyCreated
       properties(@)
-      #  @_propertyCreated = true
-      #@_klass = 'InLine'
       @_dirty = []
 
   isValid : ->
-    _.all( (x.v for x in validate(@, getKlass(@).schema ) ))
+    _.all((x.valid for x in validate(@)))
 
 getter_setter = (obj, attr) ->
   get: -> obj[attr]
@@ -301,7 +288,7 @@ setterArray = (array) ->
 properties = (obj) ->
   if obj is undefined
     return
-  for attr, value of getKlass(obj).schema #obj.constructor.schema
+  for attr, value of getKlass(obj).schema
     if _.isArray(value.type) and obj['_' + attr] isnt undefined
       Object.defineProperty obj, attr, getter_setter(obj, '_' + attr)
       obj[attr].set = setterArray(obj['_' + attr])
@@ -317,7 +304,6 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       out = []
       ret.push {object: baseParent, paths: out}
       for v,i in obj
-        #if v._klass == 'Base' or v._klass == 'InLine'
         if v instanceof Base or v instanceof InLine
           if i in obj._dirty
             out.push {path: prefix + '.' + i, value: v}
@@ -340,7 +326,6 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
       else if '_'+attr in obj._dirty
         for dct in ret
-          #if obj._klass == 'InLine'
           if obj instanceof InLine
             comp = baseParent
             baseDirty.push(prefix + '.' + attr)
@@ -349,7 +334,6 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           if _.isEqual(dct.object, comp)
             dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
             break
-      #if value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')
       if value isnt undefined and (value instanceof Base or value instanceof InLine)
         if value instanceof InLine
           ret.push { object: baseParent, paths: [] }
@@ -417,7 +401,6 @@ children = (K, baseCollection, path, baseKlass) ->
       while klass[0]
         klass = klass[0]
       if isSubClass(klass, Base)
-        #collection = klass.collection
         path_ = path + '.$.' + key
         if /^\./.test(path_) then path_ = path_[1..]
         if /^\$\./.test(path_) then path_ = path_[2..]
@@ -451,7 +434,7 @@ attachSchema = (K, done) ->
         schema[attr] = done[next] #
       else
         if isSubClass(next, Base) #
-          value_ = value #_.clone(value)
+          value_ = value
           value_.type = String
           schema[attr] = value_
           attachSchema(next, done)
