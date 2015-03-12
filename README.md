@@ -30,8 +30,10 @@ class B extends soop.InLine
       type: C
     b3:
       type: [C]
+      optional: true
     b4:
       type: [Number]
+      optional: true
     b5:
       type: [[C]]
 
@@ -42,7 +44,6 @@ class A extends soop.Base
       type: String
     a2:
       type: C
-      optional: false
     a3:
       type: B
 ```
@@ -119,7 +120,7 @@ API
 
 * array:
 
-  wrap a normal array to have a method *set* (set(index, value -> ) to mark as dirty the position of that array.
+  wrap a normal array to have a method *set* (```set(index, value -> ```) to mark as dirty the index position of that array.
 
 * soop.pCChildren:
 

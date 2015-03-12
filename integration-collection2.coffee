@@ -98,6 +98,7 @@ describe 'basic suite integration with aldeed:collection2', ->
       elem2 = C.findOne(elem._id)
       test.equal elem, elem2
     catch error
+      console.log error
       test.equal 1, 0
 
   it 'test A->B->C', (test) ->
@@ -127,7 +128,6 @@ describe 'basic suite integration with aldeed:collection2', ->
           c2: [5,6,7]
 
     test.isTrue elem.isValid()
-    console.log soop.validate(elem)
 
   it 'test validate [D]', (test) ->
     elem = new A
@@ -141,7 +141,7 @@ describe 'basic suite integration with aldeed:collection2', ->
 
     test.isFalse elem.isValid()
     for x in soop.validate(elem)
-      if x.valid == false
+      if x.valid is false
         test.equal x.path, '.a2.b2.c3.1.d'
         test.equal x.message, 'D is required'
         break
