@@ -8,6 +8,8 @@ Simple Object Oriented Programming for Meteor.
 Explanation
 -----------
 
+(Please note that this is not production ready yet.)
+
 Given:
 
 ```coffee
@@ -131,9 +133,6 @@ Look at the tests for more information.
 TODO
 ----
 * Integrate with ```simple-schema```.
-* test consecutive updates.
-* deep in soop.pCChildren.
-* test traverseSubDocs and pCChildren.
 * Philosophy:
   Is it a good idea to have that kind of OOP with Meteor?
 

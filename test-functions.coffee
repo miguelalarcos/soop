@@ -83,7 +83,6 @@ describe 'test traverse', ->
     test.equal subdocs, ['hello', 'world']
 
   it 'traverse nested', (test) ->
-    console.log '#########################################################'
     a = new A2
       a:
         [new B2
@@ -108,14 +107,9 @@ describe 'test traverse', ->
     test.equal subdocs, ['hello', 'world']
     subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
     test.equal subdocs, [5, 7]
-    #console.log soop.validate(a)
-    #for x in soop.validate(a)
-    #  console.log x
     test.isTrue a.isValid()
 
-
   it 'traverse basic3', (test) ->
-    console.log '#########################################################'
     c = new C2
       c2: [
         new D2
