@@ -46,8 +46,10 @@ class C2 extends soop.Base
   @schema:
     c:
       type: Number
+      optional: true
     c2:
       type: [D2]
+      optional: true
 
 class B2 extends soop.InLine
   @schema:
@@ -80,7 +82,8 @@ describe 'test traverse', ->
     subdocs = soop._traverseSubDocs(a, 'a3.b3.$.c')
     test.equal subdocs, ['hello', 'world']
 
-  it 'traverse basic2', (test) ->
+  it 'traverse nested', (test) ->
+    console.log '#########################################################'
     a = new A2
       a:
         [new B2
@@ -90,6 +93,7 @@ describe 'test traverse', ->
               c2:
                 [new D2
                   d: 5]
+            new C2
             ]
         new B2
           b: 'world'
@@ -104,10 +108,14 @@ describe 'test traverse', ->
     test.equal subdocs, ['hello', 'world']
     subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
     test.equal subdocs, [5, 7]
+    #console.log soop.validate(a)
+    #for x in soop.validate(a)
+    #  console.log x
+    test.isTrue a.isValid()
 
 
   it 'traverse basic3', (test) ->
-
+    console.log '#########################################################'
     c = new C2
       c2: [
         new D2

@@ -23,7 +23,8 @@ getKlass = (obj) ->
 isSubClass = (klass, super_) ->
   klass.prototype instanceof super_
 
-elementValidate = (k, x, klass, optional)->
+elementValidate = (k, x, klass, optional, path)->
+  k = path
   if x is undefined and optional == true
     return {k:k, v: true, m: ''} #[true, '']
   if x is undefined
@@ -54,19 +55,20 @@ elementValidate = (k, x, klass, optional)->
     else
       {k:k, v:false,  m: x + ' must be of type ' + klass}
 
-validateArray = (value, schema)->
+validateArray = (value, schema, path)->
   ret = []
   for v, i in value
     if _.isArray(v) #
-      ret.push validateArray(v, schema[0]) #
+      ret.push validateArray(v, schema[0], path+'.'+i) #
     else if v instanceof Base or v instanceof InLine
-      ret.push elementValidate(i, v, schema[0], schema.optional)
-      ret.push validate(v) #, schema[0])
+      ret.push elementValidate(i, v, schema[0], schema.optional, path+'.'+i)
+      ret.push validate(v, path+'.'+i)
     else
-      ret.push elementValidate(i, v, schema[0], schema.optional)
-  return ret
+      ret.push elementValidate(i, v, schema[0], schema.optional, path+'.'+i)
+  return _.flatten(ret)
 
-validate = (obj) ->
+validate = (obj, path) ->
+  if path is undefined then path = ''
   schema = getKlass(obj).schema
   ret = []
   obj2 = {}
@@ -80,13 +82,13 @@ validate = (obj) ->
     if _.isFunction(value) or key in exclude
       continue
     if value instanceof Base or value instanceof InLine
-      r = validate(value) #, schema[key].type.schema)
+      r = validate(value, path+'.'+key) #, schema[key].type.schema)
       ret = _.flatten(ret.concat(r))
     else if _.isArray(value)
-      validateArray(value, schema[key].type)
+      ret.push validateArray(value, schema[key].type, path+'.'+key)
     else
-      ret.push elementValidate(key, value, schema[key].type, schema[key].optional)
-  return ret
+      ret.push elementValidate(key, value, schema[key].type, schema[key].optional, path+'.'+key)
+  return _.flatten(ret)
 
 save_array = (array, schema)->
   ret = []
@@ -396,6 +398,8 @@ traverseSubDocs = (root, path) ->
     index = paths.shift()
 
     if index == '$'
+      if not currentSubDoc
+        return []
       for elem, i in currentSubDoc
         subdocs.push traverseSubDocs(currentSubDoc[i], paths.join('.'))
       return _.flatten(subdocs)
