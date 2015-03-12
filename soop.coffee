@@ -24,47 +24,11 @@ getKlass = (obj) ->
 isSubClass = (klass, super_) ->
   klass.prototype instanceof super_
 
-elementValidate = (obj, rklass, k, x, klass, optional, path)->
-
-  if obj isnt null and rklass._simpleSchema
-    console.log 'valido', path, x
-    if x is undefined
-      console.log obj
-    simpleSchema = rklass._simpleSchema
-    context = simpleSchema.newContext()
-    valid = context.validateOne(obj, k)
-    return {k: path, v: valid, m: context.keyErrorMessage(k)}
-  else
-    k = path
-    if x is undefined and optional == true
-      return {k:k, v: true, m: ''} #[true, '']
-    if x is undefined
-      return {k:k, v: false, m:'value undefined'} #[false, 'value undefined']
-    if klass is String
-      if _.isString(x)
-        {k:k, v:true, m:''}
-      else
-        {k:k, v:false, m: x + ' must be String'}
-    else if klass is Number
-      if _.isNumber(x)
-        {k:k, v:true, m:''}
-      else
-        {k:k, v:false. x + ' must be Number'}
-    else if klass is Boolean
-      if _.isBoolean(x)
-        {k:k, v:true, m:''}
-      else
-        {k:k, v:false,  m: x + ' must be a Boolean'}
-    else if klass is Date
-      if _.isDate(x)
-        {k:k, v:true, m:''}
-      else
-        {k:k, v:false,  m: x + ' must be a Date'}
-    else
-      if x instanceof klass
-        {k:k, v:true, m:''}
-      else
-        {k:k, v:false,  m: x + ' must be of type ' + klass}
+elementValidate = (obj, rklass, k, path)->
+  simpleSchema = rklass._simpleSchema
+  context = simpleSchema.newContext()
+  valid = context.validateOne(obj, k)
+  return {k: path, v: valid, m: context.keyErrorMessage(k)}
 
 validateArray = (obj, rklass, value, schema, path)->
   ret = []
@@ -72,10 +36,10 @@ validateArray = (obj, rklass, value, schema, path)->
     if _.isArray(v) #
       ret.push validateArray(obj, rklass, v, schema[0], path+'.'+i) #
     else if v instanceof Base or v instanceof InLine
-      ret.push elementValidate(obj, rklass, i, v, schema[0], schema.optional, path+'.'+i)
+      ret.push elementValidate(obj, rklass, i, path+'.'+i)
       ret.push validate(v, path+'.'+i)
     else
-      ret.push elementValidate(obj, rklass, i, v, schema[0], schema.optional, path+'.'+i)
+      ret.push elementValidate(obj, rklass, i, path+'.'+i)
   return _.flatten(ret)
 
 validate = (obj, path) ->
@@ -98,7 +62,7 @@ validate = (obj, path) ->
     else if _.isArray(value)
       ret.push validateArray(obj2, getKlass(obj), value, schema[key].type, path+'.'+key)
     else
-      ret.push elementValidate(obj2, getKlass(obj), key, value, schema[key].type, schema[key].optional, path+'.'+key)
+      ret.push elementValidate(obj2, getKlass(obj), key, path+'.'+key)
   return _.flatten(ret)
 
 save_array = (array, schema)->

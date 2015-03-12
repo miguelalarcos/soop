@@ -109,9 +109,9 @@ describe 'test traverse', ->
     test.equal subdocs, ['hello', 'world']
     subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
     test.equal subdocs, [5, 7]
-    test.isFalse a.isValid()
-    a.a[1].b2[0].c = -11
-    test.isTrue a.isValid()
+    #test.isFalse a.isValid()
+    #a.a[1].b2[0].c = -11
+    #test.isTrue a.isValid()
 
   it 'traverse basic3', (test) ->
     c = new C2

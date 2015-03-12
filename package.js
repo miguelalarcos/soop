@@ -1,6 +1,6 @@
 Package.describe({
   name: 'miguelalarcos:soop',
-  version: '0.4.5',
+  version: '0.4.6',
   summary: 'Simple Object Oriented Programming for Meteor',
   git: 'https://github.com/miguelalarcos/soop.git',
   documentation: 'README.md'
@@ -10,7 +10,6 @@ Package.onUse(function(api) {
   api.versionsFrom('1.0.3.2');
   api.use('coffeescript');
   api.use('underscore');
-  //api.use('aldeed:simple-schema@1.3.1', ['client', 'server'])
   api.use('aldeed:collection2@2.3.2', ['client', 'server'])
   api.addFiles('soop.coffee', ['client', 'server']);
   api.export('soop', ['client', 'server']);

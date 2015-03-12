@@ -74,7 +74,7 @@ describe 'suite basics', ->
   afterEach (test) ->
     Meteor.call 'delete'
 
-  it 'test new A + validate false', (test)->
+  it.skip 'test new A + validate false', (test)->
     a1 = new A
       a: 'hello world'
 
@@ -82,7 +82,7 @@ describe 'suite basics', ->
     test.isFalse a1.isValid()
     test.isFalse _.all((x.v for x in soop.validate(a1))) #, A.schema)))
 
-  it 'test new A + optional -> validate true', (test)->
+  it.skip 'test new A + optional -> validate true', (test)->
     a1 = new A
       a: 'hello world'
       a3: new B
@@ -220,7 +220,7 @@ describe 'suite basics', ->
     #test.isTrue _.isString(doc.a2)
     #test.isTrue _.isString(doc.a3.b2)
 
-  it 'test validate true A+C+B+C+[C]', (test)->
+  it.skip 'test validate true A+C+B+C+[C]', (test)->
     a1 = new A
       a: 'hello world'
       a2: new C

@@ -109,7 +109,7 @@ API
         type: [[C]]
   ```
 
-* soop.validate: (deprecated when full integration with ```aldeed:collection2```)
+* soop.validate:
 
   ```coffee
   validate = (obj) -> returns an array of this class:
