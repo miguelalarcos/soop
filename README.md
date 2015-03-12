@@ -135,7 +135,7 @@ API
   ```
   All collections involved are attached to its corresponding schema.
 
-Look at the tests and examples for more information. See the examples that uses ```simple-schema```.
+Look at the tests and examples for more information.
 
 TODO
 ----
