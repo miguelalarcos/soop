@@ -80,14 +80,14 @@ API
       a:
         type: String
       a2:
-        type: C  # this is InLine
+        type: C
         optional: false
       a3:
-        type: B
+        type: B # this is InLine
   ```
-  When saved to Mongo, the path *a3* will have the _id of that object, while path *a2* will have the object itself. It is only necessary to call *save* on the root object.
+  When saved to Mongodb, the path *a2* will have the _id of that object (that is previously automatically saved), while path *a3* will have the object itself. It is only necessary to call *save* on the root object.
   When doing a *save* that implies an *update*, only the dirty attributes are in $set. If you set an attribute to *undefined*, it will go in $unset.
-  This class have a *isValid* method.
+  This class have an *isValid* and *findOne* methods.
 
 * soop.InLine
 
