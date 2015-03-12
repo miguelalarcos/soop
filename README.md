@@ -113,7 +113,7 @@ API
 
   ```coffee
   validate = (obj) -> returns an array of this class:
-  [{k: attr that fails, v: true or false, m: 'descriptive message in case of fail'}, ...]
+  [{path: attr that fails, valid: true or false, message: 'descriptive message in case of fail'}, ...]
   ```
   It is useful to know what exactly fails.
 
