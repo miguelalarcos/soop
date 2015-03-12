@@ -1,20 +1,16 @@
 @a = new Mongo.Collection "A"
 
-sc_b =
-  b1:
-    type: Number
-
 class @B extends soop.InLine
-  @schema: sc_b
-
-sc_a =
-  a1:
-    type: String
-  a2:
-    type: B
+  @schema:
+    b1:
+      type: Number
 
 class @A extends soop.Base
   @collection: a
-  @schema: sc_a
+  @schema:
+    a1:
+      type: String
+    a2:
+      type: B
 
-a.attachSchema(sc_a)
+soop.attachSchema(A)

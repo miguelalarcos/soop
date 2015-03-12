@@ -1,4 +1,5 @@
 exclude = ['_id', '_dirty', '_klass', '_propertyCreated', '_super__', 'constructor']
+primitives = [String, Number, Boolean, Date]
 
 array = (v) ->
   v.set = setterArray(v)
@@ -459,6 +460,38 @@ children = (K, baseCollection, path, baseKlass) ->
 pCChildren = (K) ->
   return children(K, K.collection, '', K)
 
+attachSchema = (K, done) ->
+
+  if done is undefined
+    done = {}
+  schema = {}
+
+  for attr, value of K.schema
+    value = _.clone(value)
+    next = nextKlassAttr(K, attr)
+    if next in primitives
+      schema[attr] = value
+    else
+      if next in _.keys(done)  #
+        schema[attr] = done[next] #
+      else
+        if isSubClass(next, Base) #
+          value_ = value #_.clone(value)
+          value_.type = String
+          schema[attr] = value_
+          attachSchema(next, done)
+        else
+          schema[attr] = {type: attachSchema(next, done)}
+        done[next] = schema[attr]
+
+  simpleschema = new SimpleSchema(schema)
+  if isSubClass(K, Base)
+    K.collection.attachSchema(simpleschema)
+    return simpleschema
+  else
+    return simpleschema
+
+
 
 soop = {}
 soop.Base  = Base
@@ -470,3 +503,4 @@ soop._nextSchemaAttr = nextSchemaAttr
 soop._traverseSubDocs = traverseSubDocs
 soop._children = children
 soop._nextKlassAttr = nextKlassAttr
+soop.attachSchema = attachSchema
