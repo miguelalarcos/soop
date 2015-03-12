@@ -46,7 +46,7 @@ class C2 extends soop.Base
   @schema:
     c:
       type: Number
-      optional: true
+      #optional: true
     c2:
       type: [D2]
       optional: true
@@ -89,10 +89,12 @@ describe 'test traverse', ->
           b: 'hello'
           b2:
             [new C2
+              c: -1
               c2:
                 [new D2
                   d: 5]
             new C2
+              c: -2
             ]
         new B2
           b: 'world'
@@ -107,6 +109,8 @@ describe 'test traverse', ->
     test.equal subdocs, ['hello', 'world']
     subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
     test.equal subdocs, [5, 7]
+    test.isFalse a.isValid()
+    a.a[1].b2[0].c = -11
     test.isTrue a.isValid()
 
   it 'traverse basic3', (test) ->
