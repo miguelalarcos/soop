@@ -146,7 +146,12 @@ filter = (obj) ->
 
 save = (obj, schema)->
   ret = {}
-  toBDD = {}
+  #toBDD = {}
+  klass = getKlass(obj)
+  if obj instanceof Base
+    toBDD = new klass(null, null, true)
+  else
+    toBDD = new klass(null, true)
 
   for key, value of obj
     if not _.isFunction(value) and key not in exclude and /^_/.test(key)
@@ -166,11 +171,11 @@ save = (obj, schema)->
         toBDD[key] = value
 
   toBDD._dirty = obj._dirty
-  toBDD.constructor = getKlass(obj) # obj.constructor # refactorizar a toBDD._collection
-  if obj instanceof Base
-    toBDD._klass = 'Base'
-  else if obj instanceof InLine
-    toBDD._klass = 'InLine'
+  #toBDD.constructor = getKlass(obj) # obj.constructor # refactorizar a toBDD._collection
+  #if obj instanceof Base
+  #  toBDD._klass = 'Base'
+  #else if obj instanceof InLine
+  #  toBDD._klass = 'InLine'
   if obj._id
     toBDD._id = obj._id
 
@@ -243,30 +248,31 @@ create = (obj, schema)->
   return ret
 
 class Base
-  constructor: (args, doFindOne)->
-    if doFindOne is undefined then doFindOne = true
-    args = args or {}
-    if _.isString(args) then args = {_id: args}
+  constructor: (args, doFindOne, raw)->
+    if not raw
+      if doFindOne is undefined then doFindOne = true
+      args = args or {}
+      if _.isString(args) then args = {_id: args}
 
-    klass = getKlass(@)
-    if args._id
-      @_id = args._id
-      if doFindOne
-        args = klass.collection.findOne(args._id)
+      klass = getKlass(@)
+      if args._id
+        @_id = args._id
+        if doFindOne
+          args = klass.collection.findOne(args._id)
 
-    schema = klass.schema
-    values = create args, schema
+      schema = klass.schema
+      values = create args, schema
 
-    for key, value of values
-      if not _.isFunction(value)
-        @[key] = value
+      for key, value of values
+        if not _.isFunction(value)
+          @[key] = value
 
-    #if not @_propertyCreated
-    properties(@)
-    #  @_propertyCreated = true
+      #if not @_propertyCreated
+      properties(@)
+      #  @_propertyCreated = true
 
-    @_dirty = []
-    @_klass = 'Base'
+      @_dirty = []
+      #@_klass = 'Base'
 
   isValid : ->
     _.all( (x.v for x in validate(@, getKlass(@).schema ) ))
@@ -278,26 +284,26 @@ class Base
     new @({_id: _id})
 
 class InLine
-  constructor: (args)->
+  constructor: (args, raw)->
+    if not raw
+      schema = getKlass(@).schema
+      for key, value of args
+        if /^_/.test(key) then key = key[1..]
+        if (key in exclude) or (key not in _.keys(schema))
+          continue
+        klass = schema[key].type
+        if _.isArray(value)
+          @['_'+key] = createArray value, klass
+        else if isSubClass(klass, InLine) or isSubClass(klass, Base)
+          @['_'+key] = new klass value
+        else
+          @['_'+key] = value
 
-    schema = getKlass(@).schema
-    for key, value of args
-      if /^_/.test(key) then key = key[1..]
-      if (key in exclude) or (key not in _.keys(schema))
-        continue
-      klass = schema[key].type
-      if _.isArray(value)
-        @['_'+key] = createArray value, klass
-      else if isSubClass(klass, InLine) or isSubClass(klass, Base)
-        @['_'+key] = new klass value
-      else
-        @['_'+key] = value
-
-    #if not @_propertyCreated
-    properties(@)
-    #  @_propertyCreated = true
-    @_klass = 'InLine'
-    @_dirty = []
+      #if not @_propertyCreated
+      properties(@)
+      #  @_propertyCreated = true
+      #@_klass = 'InLine'
+      @_dirty = []
 
   isValid : ->
     _.all( (x.v for x in validate(@, getKlass(@).schema ) ))
@@ -335,7 +341,8 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
       out = []
       ret.push {object: baseParent, paths: out}
       for v,i in obj
-        if v._klass == 'Base' or v._klass == 'InLine'
+        #if v._klass == 'Base' or v._klass == 'InLine'
+        if v instanceof Base or v instanceof InLine
           if i in obj._dirty
             out.push {path: prefix + '.' + i, value: v}
           ret.push { object: v, paths: [] }
@@ -357,7 +364,8 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           _getMongoSet(prefix + '.' + attr, value, ret, obj, obj._dirty) #
       else if '_'+attr in obj._dirty
         for dct in ret
-          if obj._klass == 'InLine'
+          #if obj._klass == 'InLine'
+          if obj instanceof InLine
             comp = baseParent
             baseDirty.push(prefix + '.' + attr)
           else
@@ -365,8 +373,9 @@ _getMongoSet = (prefix, obj, ret, baseParent, baseDirty) -> # es posible usar ba
           if _.isEqual(dct.object, comp)
             dct.paths.push {path: prefix + '.' +attr, value: obj[attr]}
             break
-      if value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')
-        if value._klass == 'InLine'
+      #if value isnt undefined and (value._klass == 'Base' or value._klass == 'InLine')
+      if value isnt undefined and (value instanceof Base or value instanceof InLine)
+        if value instanceof InLine
           ret.push { object: baseParent, paths: [] }
           _getMongoSet(prefix + '.' + attr, value, ret, baseParent, baseDirty)
         else

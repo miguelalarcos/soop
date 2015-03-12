@@ -128,11 +128,10 @@ API
    pCChildren = (K) -> returns [{find: ..., children: ...}, ...]
    ```
 
-Look at the tests for more information.
+Look at the tests and examples for more information. See the examples that uses ```simple-schema```.
 
 TODO
 ----
-* Integrate with ```simple-schema```.
 * Philosophy:
   Is it a good idea to have that kind of OOP with Meteor?
 
