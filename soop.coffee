@@ -246,6 +246,10 @@ class Base
   save: ->
     save(@, @constructor.schema)
 
+  remove: ->
+    getKlass(@).collection.remove({_id: @_id})
+    @_id = null
+
   @findOne: (_id) ->
     new @({_id: _id})
 

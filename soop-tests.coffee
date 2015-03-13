@@ -629,3 +629,25 @@ describe 'suite update', ->
 
     expect(spies.update_Y).to.have.been.calledWith(y._id, {$set: {'y2.0': {z: 'sega'}}, $unset: {}})
 
+describe 'suite remove', ->
+  beforeEach (test)->
+    Meteor.call 'delete'
+
+  afterEach (test) ->
+    Meteor.call 'delete'
+
+  it 'test remove basic', (test)->
+    elem = new X
+      x: new Y
+        y: new Z(z:'hello')
+        y2: [new Z(z: 'world')]
+        y3: [1,2,3]
+
+    elem.save()
+    _id = elem._id
+    elem2 = elem.x
+    elem.remove()
+    test.isNull elem._id
+    test.isUndefined x_collection.findOne(_id)
+    elem3 = Y.findOne(elem2._id)
+    test.equal elem2, elem3

@@ -17,18 +17,24 @@ Meteor.methods
 a.allow
   insert: -> true
   update: -> true
+  remove: -> true
 c.allow
   insert: -> true
   update: -> true
+  remove: -> true
 x.allow
   insert: -> true
   update: -> true
+  remove: -> true
 y.allow
   insert: -> true
   update: -> true
+  remove: -> true
 u.allow
   insert: -> true
   update: -> true
+  remove: -> true
 w.allow
   insert: -> true
   update: -> true
+  remove: -> true
