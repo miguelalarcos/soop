@@ -158,6 +158,7 @@ save = (obj, schema)->
       docToInsert = cloneWithFilter(toBDD, filter)
       obj._id = getKlass(obj).collection.insert(docToInsert)
       obj._dirty = []
+      Base.space[obj._id] = obj
     else
       for [elem, set, unset] in getMongoSet(toBDD, dirty)
         set = cloneWithFilter(set, filter)
@@ -218,6 +219,7 @@ create = (obj, schema)->
   return ret
 
 class Base
+  @space: {}
   constructor: (args, doFindOne, raw)->
     if not raw
       if doFindOne is undefined then doFindOne = true
@@ -248,10 +250,15 @@ class Base
 
   remove: ->
     getKlass(@).collection.remove({_id: @_id})
+    delete Base.space[@_id]
     @_id = null
 
   @findOne: (_id) ->
-    new @({_id: _id})
+    value = Base.space[_id]
+    if value
+      value
+    else
+      new @({_id: _id})
 
 class InLine
   constructor: (args, raw)->

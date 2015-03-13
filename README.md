@@ -97,7 +97,9 @@ API
   ```
   When saved to Mongodb, the path *a2* will have the _id of that object (that is previously automatically saved), while path *a3* will have the object itself. It is only necessary to call *save* on the root object.
   When doing a *save* that implies an *update*, only the dirty attributes are in $set. If you set an attribute to *undefined*, it will go in $unset.
-  This class have an *isValid* and *findOne* methods.
+  This class have the next methods: *isValid*, *findOne*, *save* and *remove*.
+
+  This class have an attribute *space* where the fetched objects are cached. If you call A.findOne(_id) and the _id is cached, then no *collection.findOne()* is done.
 
 * soop.InLine
 
@@ -149,6 +151,7 @@ Look at the tests and examples for more information.
 
 TODO
 ----
+* Take in consideration that the insert, update or remove can fail, so do something.
 * Philosophy:
   Is it a good idea to have that kind of OOP with Meteor?
 
