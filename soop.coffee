@@ -218,6 +218,48 @@ create = (obj, schema)->
       ret['_'+key_] = value
   return ret
 
+sync_array = (array, arrayValuesInLIne) ->
+  for v, i in array
+    if _.isArray(v)
+      sync_array(v, arrayValuesInLIne[i])
+    else
+      sync(v, arrayValuesInLIne[i])
+
+sync = (obj, valuesInLine)->
+  klass = getKlass(obj)
+  if isSubClass(klass, Base)
+    values = klass.collection.findOne(obj._id)
+  else
+    values = {}
+    for k, v of valuesInLine
+      if k in exclude
+        continue
+      if /^_/.test(k)
+        values[k[1..]] = v
+      else
+        values[k] = v
+
+  for attr, valueSchema of klass.schema
+    next = nextKlassAttr(klass, attr)
+    if attr in _.keys(values)
+      if _.isArray(valueSchema.type)
+        if next in primitives
+          obj['_'+attr] = values[attr]
+        else
+          if obj[attr]
+            sync_array(obj[attr], values[attr])
+          else
+            obj[attr] = new next(values[attr])
+      else
+        if next in primitives
+          obj['_'+attr] = values[attr]
+        else
+          if obj[attr]
+            sync(obj[attr], values[attr])
+          else
+            obj[attr] = new next(values[attr])
+
+
 class Base
   @space: {}
   constructor: (args, doFindOne, raw)->
@@ -260,6 +302,9 @@ class Base
     else
       new @({_id: _id})
 
+  sync: ->
+    sync(@)
+
 class InLine
   constructor: (args, raw)->
     if not raw
@@ -271,7 +316,7 @@ class InLine
         klass = schema[key].type
         if _.isArray(value)
           @['_'+key] = createArray value, klass
-        else if isSubClass(klass, InLine) or isSubClass(klass, Base)
+        else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine) #isSubClass(klass, InLine) or isSubClass(klass, Base)
           @['_'+key] = new klass value
         else
           @['_'+key] = value

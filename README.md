@@ -97,7 +97,7 @@ API
   ```
   When saved to Mongodb, the path *a2* will have the _id of that object (that is previously automatically saved), while path *a3* will have the object itself. It is only necessary to call *save* on the root object.
   When doing a *save* that implies an *update*, only the dirty attributes are in $set. If you set an attribute to *undefined*, it will go in $unset.
-  This class have the next methods: *isValid*, *findOne*, *save* and *remove*.
+  This class have the next methods: *isValid*, *findOne* (class method), *save*, *remove* and *sync*.
 
   This class have an attribute *space* where the fetched objects are cached. If you call A.findOne(_id) and the _id is cached, then no *collection.findOne()* is done.
 
