@@ -6,6 +6,7 @@ class @C extends soop.Base
   @schema:
     c:
       type: Number
+  add_x: (x) -> @c + x
 
 class @B extends soop.InLine
   @schema:

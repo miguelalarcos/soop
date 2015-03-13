@@ -21,6 +21,7 @@ class C extends soop.Base
   @schema:
     c:
       type: String
+  dots: (word) -> @c + '...' + word
 
 class B extends soop.InLine
   @schema:
@@ -63,7 +64,15 @@ a1 = new A
 
 a1.save()
 a2 = A.findOne(a1._id)
-console.log a2.a3.b5[0][0].c # -> atari
+console.log a2.a3.b5[0][0].c.dots('hello') # -> atari...hello
+```
+
+and in the template:
+
+```html
+...
+    {{this.dots 'hello'}}
+...
 ```
 
 API
