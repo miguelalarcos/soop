@@ -119,3 +119,34 @@ describe 'suite test sync', ->
     c.update({_id: c_elem._id}, {$set: {c: -1}})
     elem.sync()
     test.equal elem.a4[0].b3[0].c, -1
+
+  it 'test sync A->B->(C)', (test) ->
+    elem = new A
+      a2: new B
+
+    elem.save()
+
+    a.update({_id: elem._id}, {$set: {'a2.b2': {c: -1}}})
+    elem.sync()
+    test.equal elem.a2.b2.c, -1
+
+
+  it 'test sync A->[B]->(C)', (test) ->
+    elem = new A
+      a4: [new B]
+
+    elem.save()
+
+    a.update({_id: elem._id}, {$set: {'a4.0.b2': {c: -1}}})
+    elem.sync()
+    test.equal elem.a4[0].b2.c, -1
+
+  it 'test sync A->B->new[C]', (test) ->
+    elem = new A
+      a2: new B
+
+    elem.save()
+
+    a.update({_id: elem._id}, {$set: {'a2.b3': [{c: -1}]}})
+    elem.sync()
+    test.equal elem.a2.b3[0].c, -1

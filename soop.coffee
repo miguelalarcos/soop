@@ -249,7 +249,10 @@ sync = (obj, valuesInLine)->
           if obj[attr]
             sync_array(obj[attr], values[attr])
           else
-            obj[attr] = new next(values[attr])
+            ret = []
+            for v in values[attr]
+              ret.push new next(v)
+            obj[attr] = ret
       else
         if next in primitives
           obj['_'+attr] = values[attr]
