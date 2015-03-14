@@ -168,5 +168,6 @@ describe '', ->
     elem.save()
     elem.a = 8
     elem.sync()
+    test.equal elem.a, 7
     elem.save()
     expect(spies.update_A).to.not.have.been.called
