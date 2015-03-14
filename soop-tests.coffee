@@ -74,23 +74,11 @@ describe 'suite basics', ->
   afterEach (test) ->
     Meteor.call 'delete'
 
-  it.skip 'test new A + validate false', (test)->
+  it 'test new A', (test)->
     a1 = new A
       a: 'hello world'
 
     test.equal a1.a, 'hello world'
-    test.isFalse a1.isValid()
-    test.isFalse _.all((x.v for x in soop.validate(a1))) #, A.schema)))
-
-  it.skip 'test new A + optional -> validate true', (test)->
-    a1 = new A
-      a: 'hello world'
-      a3: new B
-        b: 'please validate'
-
-    test.equal a1.a, 'hello world'
-    test.isTrue a1.isValid()
-    test.isTrue _.all((x.v for x in soop.validate(a1)))
 
   it 'test new A+C', (test)->
     a1 = new A
@@ -99,6 +87,16 @@ describe 'suite basics', ->
         c: 'insert coin'
 
     test.equal a1.a2.c, 'insert coin'
+
+  it 'test new A+C is same object', (test)->
+    elem_c = new C
+      c: 'insert coin'
+
+    a1 = new A
+      a: 'hello world'
+      a2: elem_c
+
+    test.isTrue a1.a2 is elem_c
 
   it 'test new A+C+B+C', (test)->
     a1 = new A

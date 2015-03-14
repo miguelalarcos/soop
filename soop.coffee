@@ -226,6 +226,7 @@ sync_array = (array, arrayValuesInLIne) ->
       sync(v, arrayValuesInLIne[i])
 
 sync = (obj, valuesInLine)->
+  obj._dirty = []
   klass = getKlass(obj)
   if isSubClass(klass, Base)
     values = klass.collection.findOne(obj._id)

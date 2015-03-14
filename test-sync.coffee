@@ -150,3 +150,23 @@ describe 'suite test sync', ->
     a.update({_id: elem._id}, {$set: {'a2.b3': [{c: -1}]}})
     elem.sync()
     test.equal elem.a2.b3[0].c, -1
+
+
+describe '', ->
+  beforeEach (test)->
+    a.remove({})
+    c.remove({})
+    spies.create('update_A', a, 'update')
+
+  afterEach (test) ->
+    a.remove({})
+    c.remove({})
+    spies.restore('update_A')
+
+  it 'test sync + save', (test) ->
+    elem = new A(a:7)
+    elem.save()
+    elem.a = 8
+    elem.sync()
+    elem.save()
+    expect(spies.update_A).to.not.have.been.called
