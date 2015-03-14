@@ -99,7 +99,16 @@ API
   When doing a *save* that implies an *update*, only the dirty attributes are in $set. If you set an attribute to *undefined*, it will go in $unset.
   This class have the next methods: *isValid*, *findOne* (class method), *save*, *remove* and *sync*.
 
-  This class have an attribute *space* where the fetched objects are cached. If you call A.findOne(_id) and the _id is cached, then no *collection.findOne()* is done.
+  * isValid:
+    returns a boolean indicating if the object is valid according to its schema.
+  * findOne:
+    you pass an _id and returns the object with this _id. Class method.
+  * save:
+    saves the object to Mongo. It can be an insert or an updated depending if the object has an _id or not.
+  * remove:
+    removes de objecto from Mongo.
+  * sync:
+    you call *sync* to update the object with the actual values on Mongo.
 
 * soop.InLine
 

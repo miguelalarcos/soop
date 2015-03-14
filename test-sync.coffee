@@ -13,6 +13,8 @@ class B extends soop.InLine
       type: Number
     b2:
       type: C
+    b3:
+      type: [C]
 
 class A extends soop.Base
   @collection: a
@@ -40,6 +42,13 @@ describe 'suite test sync', ->
     elem.save()
     a.update({_id: elem._id}, {$set: {a:8}})
     elem.sync()
+    test.equal elem.a, 8
+
+  it 'test basic sync due to a findOne', (test) ->
+    elem = new A(a:7)
+    elem.save()
+    a.update({_id: elem._id}, {$set: {a:8}})
+    elem = A.findOne(elem._id)
     test.equal elem.a, 8
 
   it 'test sync A->B', (test) ->
@@ -75,3 +84,38 @@ describe 'suite test sync', ->
     c.update({_id: c_elem._id}, {$set: {c: -1}})
     elem.sync()
     test.equal elem.a2.b2.c, -1
+
+  it 'test sync A->B->[C]', (test) ->
+    c_elem = new C(c: 5)
+    elem = new A
+      a2: new B
+        b3: [c_elem]
+
+    elem.save()
+    c.update({_id: c_elem._id}, {$set: {c: -1}})
+    elem.sync()
+    test.equal elem.a2.b3[0].c, -1
+
+  it 'test sync A->[B]->C', (test) ->
+    c_elem = new C(c: 5)
+    elem = new A
+      a4: [new B
+        b2: c_elem
+        ]
+
+    elem.save()
+    c.update({_id: c_elem._id}, {$set: {c: -1}})
+    elem.sync()
+    test.equal elem.a4[0].b2.c, -1
+
+  it 'test sync A->[B]->[C]', (test) ->
+    c_elem = new C(c: 5)
+    elem = new A
+      a4: [new B
+             b3: [c_elem]
+      ]
+
+    elem.save()
+    c.update({_id: c_elem._id}, {$set: {c: -1}})
+    elem.sync()
+    test.equal elem.a4[0].b3[0].c, -1

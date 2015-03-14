@@ -33,7 +33,7 @@ describe 'test space', ->
     spies.restore('findOne_c')
     soop.Base.space = {}
 
-  it 'test simple space', (test) ->
+  it.skip 'test simple space', (test) ->
     elem = new A
       a: new B
         b: new C
@@ -43,7 +43,7 @@ describe 'test space', ->
     elem2 = A.findOne(elem._id)
     expect(spies.findOne_a).to.not.have.been.called
 
-  it 'test nested space', (test) ->
+  it.skip 'test nested space', (test) ->
     elem = new A
       a: new B
         b: new C

@@ -298,9 +298,10 @@ class Base
   @findOne: (_id) ->
     value = Base.space[_id]
     if value
-      value
+      value.sync()
+      return value
     else
-      new @({_id: _id})
+      return new @({_id: _id})
 
   sync: ->
     sync(@)
