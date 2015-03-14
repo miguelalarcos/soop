@@ -152,7 +152,7 @@ describe 'suite test sync', ->
     test.equal elem.a2.b3[0].c, -1
 
 
-describe '', ->
+describe 'suite basic sync', ->
   beforeEach (test)->
     a.remove({})
     c.remove({})

@@ -158,7 +158,7 @@ save = (obj, schema)->
       docToInsert = cloneWithFilter(toBDD, filter)
       obj._id = getKlass(obj).collection.insert(docToInsert)
       obj._dirty = []
-      Base.space[obj._id] = obj
+      #Base.space[obj._id] = obj  # waiting for weak references in javascript in the future
     else
       for [elem, set, unset] in getMongoSet(toBDD, dirty)
         set = cloneWithFilter(set, filter)
@@ -322,6 +322,8 @@ class InLine
         if _.isArray(value)
           @['_'+key] = createArray value, klass
         else if _.isObject(value) and not (value instanceof Base) and not (value instanceof InLine) #isSubClass(klass, InLine) or isSubClass(klass, Base)
+          @['_'+key] = new klass value
+        else if _.isString(value) and (isSubClass(klass, InLine) or isSubClass(klass, Base))
           @['_'+key] = new klass value
         else
           @['_'+key] = value

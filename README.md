@@ -167,3 +167,13 @@ TODO
 Contributing
 ------------
 * Help is welcome.
+
+Issues
+------
+As far as I know, there is no weak references in javascript. So, I can not cached the objects in a dictionary (by its _id). So, be careful in this case:
+```coffee
+a = New A(a:8)
+a.save()
+a2 = A.findOne(a._id)
+a is a2 # false, so if you modify 'a' you are not modifying 'a2'.
+```
