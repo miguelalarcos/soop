@@ -156,6 +156,38 @@ API
   ```
   All collections involved are attached to its corresponding schema.
 
+* soop.traverseSubDocs:
+  ```coffee
+  traverseSubDocs = (root, path) ->
+  ```
+  Get all de the subdocs given an object and a path, like for example:
+  ```coffee
+    a = new A2
+      a:
+        [new B2
+          b: 'hello'
+          b2:
+            [new C2
+              c: -1
+              c2:
+                [new D2
+                  d: 5]
+            new C2
+              c: -2
+            ]
+        new B2
+          b: 'world'
+          b2:
+            [new C2
+              c2:
+                [new D2
+                  d: 7]
+            ]
+        ]
+  subdocs = soop.traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
+  test.equal subdocs, [5, 7]
+  ```
+
 Look at the tests and examples for more information.
 
 TODO

@@ -79,7 +79,7 @@ describe 'test traverse', ->
     a = new A
       a3: new B
         b3: [new C(c:'hello'), new C(c:'world')]
-    subdocs = soop._traverseSubDocs(a, 'a3.b3.$.c')
+    subdocs = soop.traverseSubDocs(a, 'a3.b3.$.c')
     test.equal subdocs, ['hello', 'world']
 
   it 'traverse nested', (test) ->
@@ -105,9 +105,9 @@ describe 'test traverse', ->
                   d: 7]
             ]
         ]
-    subdocs = soop._traverseSubDocs(a, 'a.$.b')
+    subdocs = soop.traverseSubDocs(a, 'a.$.b')
     test.equal subdocs, ['hello', 'world']
-    subdocs = soop._traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
+    subdocs = soop.traverseSubDocs(a, 'a.$.b2.$.c2.$.d')
     test.equal subdocs, [5, 7]
     #test.isFalse a.isValid()
     #a.a[1].b2[0].c = -11
@@ -120,7 +120,7 @@ describe 'test traverse', ->
           d: 5
       ]
 
-    subdocs = soop._traverseSubDocs(c, 'c2.$.d')
+    subdocs = soop.traverseSubDocs(c, 'c2.$.d')
     test.equal subdocs, [5]
 
 describe 'test children', ->
