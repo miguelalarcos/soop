@@ -67,13 +67,23 @@ a2 = A.findOne(a1._id)
 console.log a2.a3.b5[0][0].c.dots('hello') # -> atari...hello
 ```
 
-and in the template:
+...in the template:
 
 ```html
 ...
     {{this.dots 'hello'}}
 ...
 ```
+
+And the properties are reactive sources, so if you have:
+
+```coffee
+c = new C
+  c: 'atari'
+c.c = 'spain'
+```
+
+then the template is actualized to "spain...hello" automatically.
 
 API
 ---
