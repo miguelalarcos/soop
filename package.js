@@ -9,6 +9,7 @@ Package.describe({
 Package.onUse(function(api) {
   api.versionsFrom('1.0.3.2');
   api.use('coffeescript');
+  api.use('tracker');
   api.use('underscore');
   api.use('aldeed:collection2@2.3.2', ['client', 'server']);
   api.addFiles('soop.coffee', ['client', 'server']);
@@ -17,6 +18,7 @@ Package.onUse(function(api) {
 
 Package.onTest(function(api) {
   api.use('tinytest');
+  api.use('tracker');
   api.use('miguelalarcos:soop');
   api.use('coffeescript');
   api.use('mongo', ['client', 'server']);

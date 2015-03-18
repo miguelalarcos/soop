@@ -285,6 +285,7 @@ class Base
         if not _.isFunction(value)
           @[key] = value
 
+      #@_dependencies = {}
       properties(@)
       @_dirty = []
 
@@ -328,6 +329,7 @@ class InLine
         else
           @['_'+key] = value
 
+      #@_dependencies = {}
       properties(@)
       @_dirty = []
 
@@ -335,11 +337,20 @@ class InLine
     _.all((x.valid for x in validate(@)))
 
 getter_setter = (obj, attr) ->
-  get: -> obj[attr]
+  dep = null
+  if Meteor.isClient
+    dep = new Tracker.Dependency()
+  #obj._dependencies[attr] = dep
+  get: ->
+    if dep then dep.depend()
+    obj[attr]
+
   set: (value) ->
-    obj[attr] = value
-    if attr not in obj._dirty
-      obj._dirty.push attr
+    if value != obj[attr]
+      if dep then dep.changed()
+      obj[attr] = value
+      if attr not in obj._dirty
+        obj._dirty.push attr
 
 setterArray = (array) ->
   array._dirty = []

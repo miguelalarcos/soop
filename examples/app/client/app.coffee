@@ -1,8 +1,13 @@
+c = new C()
+c.c = 8
+
 class HomeController extends RouteController
   waitOn: -> Meteor.subscribe 'dataComposite'
   data: ->
-    return data: (new A(x) for x in a.find({}).fetch())
-
+    return {
+    data: (new A(x) for x in a.find({}).fetch())
+    element: c
+    }
 
 Router.map ->
   @route 'home',
@@ -29,4 +34,8 @@ Template.home.events
     elem = C.findOne(_id)
     elem.c = 0
     elem.save()
+
+  'click .changeC': (e, t)->
+    c.c = c.c + 1
+    console.log c
 

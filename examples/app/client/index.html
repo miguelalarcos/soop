@@ -17,4 +17,10 @@
     {{/each}}
     <button class="add">add</button>
     <button class="change">change</button>
+    <br>
+    {{#with element}}
+        {{this.c}},
+        {{this.add_x 1}}
+    {{/with}}
+    <button class="changeC">changeC</button>
 </template>
